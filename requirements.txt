@@ -1,0 +1,5 @@
+Flask
+flask-cors
+PyMuPDF
+chromadb
+requests

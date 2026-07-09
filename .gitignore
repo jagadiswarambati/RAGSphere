@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+
+uploads/*
+!uploads/.gitkeep
+
+vector_db/
+documents.json
+.env

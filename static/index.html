@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="AI-powered document question answering system using RAG"
+    >
+
+    <title>DocuMind AI</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <div class="brand">
+
+                <div class="brand-icon">
+                    D
+                </div>
+
+                <div>
+                    <h1>DocuMind</h1>
+                    <p>Document Intelligence</p>
+                </div>
+
+            </div>
+
+
+            <div class="system-status">
+
+                <span
+                    id="statusDot"
+                    class="status-dot"
+                ></span>
+
+                <div>
+                    <strong id="systemStatus">
+                        Checking AI...
+                    </strong>
+
+                    <p id="modelName">
+                        Connecting to Ollama
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="sidebar-section">
+
+                <div class="section-title">
+
+                    <span>
+                        DOCUMENT LIBRARY
+                    </span>
+
+                    <span id="documentCount">
+                        0
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="documentList"
+                    class="document-list"
+                >
+
+                    <div
+                        id="emptyDocuments"
+                        class="empty-documents"
+                    >
+
+                        <div class="empty-icon">
+                            +
+                        </div>
+
+                        <p>
+                            No documents uploaded
+                        </p>
+
+                        <span>
+                            Add PDF or TXT files to begin
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="sidebar-bottom">
+
+                <button
+                    class="secondary-button"
+                    onclick="clearChat()"
+                >
+                    Clear Conversation
+                </button>
+
+                <button
+                    class="danger-button"
+                    onclick="clearDocuments()"
+                >
+                    Clear All Documents
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN -->
+
+        <main class="main">
+
+            <header class="topbar">
+
+                <div>
+
+                    <p class="eyebrow">
+                        RETRIEVAL-AUGMENTED GENERATION
+                    </p>
+
+                    <h2>
+                        Ask your documents
+                    </h2>
+
+                    <p>
+                        Upload documents and get answers grounded
+                        in their actual content.
+                    </p>
+
+                </div>
+
+
+                <div class="pipeline-badge">
+
+                    <span>Parse</span>
+                    <b>→</b>
+                    <span>Embed</span>
+                    <b>→</b>
+                    <span>Retrieve</span>
+                    <b>→</b>
+                    <span>Generate</span>
+
+                </div>
+
+            </header>
+
+
+            <!-- UPLOAD -->
+
+            <section class="upload-section">
+
+                <div
+                    id="dropZone"
+                    class="drop-zone"
+                >
+
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept=".pdf,.txt"
+                        multiple
+                        hidden
+                    >
+
+
+                    <div class="upload-icon">
+                        ↑
+                    </div>
+
+
+                    <div>
+
+                        <h3>
+                            Add documents to your knowledge base
+                        </h3>
+
+                        <p>
+                            Drag and drop PDF or TXT files here,
+                            or browse from your device.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        class="browse-button"
+                        onclick="openFilePicker(event)"
+                    >
+                        Browse Files
+                    </button>
+
+
+                    <div class="upload-meta">
+
+                        <span>PDF & TXT</span>
+
+                        <span>Multiple files</span>
+
+                        <span>Maximum 20 MB</span>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="processingPanel"
+                    class="processing-panel hidden"
+                >
+
+                    <div class="loader"></div>
+
+                    <div>
+
+                        <strong id="processingTitle">
+                            Processing documents
+                        </strong>
+
+                        <p id="processingText">
+                            Parsing, chunking and generating embeddings...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- CHAT -->
+
+            <section class="chat-section">
+
+                <div
+                    id="chatMessages"
+                    class="chat-messages"
+                >
+
+                    <div
+                        id="welcomeMessage"
+                        class="welcome"
+                    >
+
+                        <div class="welcome-icon">
+                            AI
+                        </div>
+
+                        <h2>
+                            Your documents, understood.
+                        </h2>
+
+                        <p>
+                            DocuMind uses semantic search and
+                            retrieval-augmented generation to answer
+                            questions using only your uploaded documents.
+                        </p>
+
+
+                        <div class="feature-grid">
+
+                            <div class="feature-card">
+
+                                <span>01</span>
+
+                                <div>
+                                    <strong>
+                                        Semantic Retrieval
+                                    </strong>
+
+                                    <p>
+                                        Finds relevant information by meaning,
+                                        not just keywords.
+                                    </p>
+                                </div>
+
+                            </div>
+
+
+                            <div class="feature-card">
+
+                                <span>02</span>
+
+                                <div>
+                                    <strong>
+                                        Grounded Answers
+                                    </strong>
+
+                                    <p>
+                                        Responses are generated from retrieved
+                                        document context.
+                                    </p>
+                                </div>
+
+                            </div>
+
+
+                            <div class="feature-card">
+
+                                <span>03</span>
+
+                                <div>
+                                    <strong>
+                                        Source Evidence
+                                    </strong>
+
+                                    <p>
+                                        Inspect document names, pages and
+                                        retrieved passages.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="input-area">
+
+                    <div class="question-box">
+
+                        <textarea
+                            id="questionInput"
+                            rows="1"
+                            placeholder="Ask a question about your documents..."
+                            onkeydown="handleQuestionKey(event)"
+                            oninput="resizeTextarea(this)"
+                        ></textarea>
+
+
+                        <button
+                            id="sendButton"
+                            class="send-button"
+                            onclick="askQuestion()"
+                            title="Send question"
+                        >
+                            ↑
+                        </button>
+
+                    </div>
+
+
+                    <p class="input-hint">
+
+                        Answers are generated only from retrieved
+                        document context. Verify important information
+                        using the displayed sources.
+
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- TOAST -->
+
+    <div
+        id="toast"
+        class="toast"
+    ></div>
+
+
+    <!-- CONFIRM MODAL -->
+
+    <div
+        id="confirmModal"
+        class="modal hidden"
+    >
+
+        <div class="modal-card">
+
+            <h3 id="modalTitle">
+                Confirm action
+            </h3>
+
+            <p id="modalText">
+                Are you sure?
+            </p>
+
+            <div class="modal-actions">
+
+                <button
+                    class="modal-cancel"
+                    onclick="closeModal()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    id="modalConfirm"
+                    class="modal-confirm"
+                >
+                    Confirm
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="/static/script.js"></script>
+
+</body>
+
+</html>
