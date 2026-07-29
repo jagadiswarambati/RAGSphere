@@ -29,7 +29,7 @@ This project uses two models:
 ## Step 1: Clone the Repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/jagadiswarambati/documind-rag
 cd documind-rag
 ```
 
