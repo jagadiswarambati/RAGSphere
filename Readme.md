@@ -1,4 +1,4 @@
-# 📄 DocuMind-RAG
+# 📄 RAGSphere
 
 DocuMind-RAG is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDF or TXT documents and ask questions about their content using a local Large Language Model (LLM). The project combines document retrieval with AI-generated responses to provide accurate answers based on the uploaded documents.
 
