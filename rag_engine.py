@@ -37,51 +37,71 @@ collection = client.get_or_create_collection(
 
 
 def clean_text(text):
+
     text = text.replace("\x00", " ")
+
     text = re.sub(
         r"[ \t]+",
         " ",
         text
     )
+
     text = re.sub(
         r"\n{3,}",
         "\n\n",
         text
     )
+
     return text.strip()
 
+
 def extract_pdf(file_path):
+
     pages = []
+
     document = fitz.open(file_path)
+
     try:
+
         for page_number, page in enumerate(
             document,
             start=1
         ):
+
             text = page.get_text("text")
+
             text = clean_text(text)
+
             if text:
+
                 pages.append({
                     "text": text,
                     "page": page_number
                 })
+
     finally:
+
         document.close()
+
     return pages
 
 
 def extract_txt(file_path):
+
     with open(
         file_path,
         "r",
         encoding="utf-8",
         errors="ignore"
     ) as file:
+
         text = clean_text(
             file.read()
         )
+
     if not text:
         return []
+
     return [
         {
             "text": text,
@@ -89,10 +109,13 @@ def extract_txt(file_path):
         }
     ]
 
+
 def extract_document(file_path):
+
     extension = os.path.splitext(
         file_path
     )[1].lower()
+
 
     if extension == ".pdf":
 
@@ -100,14 +123,18 @@ def extract_document(file_path):
             file_path
         )
 
+
     if extension == ".txt":
+
         return extract_txt(
             file_path
         )
 
+
     raise ValueError(
         "Unsupported document format"
     )
+
 
 def chunk_text(
     text,
