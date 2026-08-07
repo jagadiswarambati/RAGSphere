@@ -13,7 +13,7 @@ EMBEDDING_MODEL = "nomic-embed-text"
 
 VECTOR_DB_PATH = os.path.join(
     os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
-    "DocuMind",
+    "RAGSphere",
     "vector_db"
 )
 
