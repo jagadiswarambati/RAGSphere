@@ -1,6 +1,6 @@
 # 📄 RAGSphere
 
-DocuMind-RAG is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDF or TXT documents and ask questions about their content using a local Large Language Model (LLM). The project combines document retrieval with AI-generated responses to provide accurate answers based on the uploaded documents.
+RAGSphere is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDF or TXT documents and ask questions about their content using a local Large Language Model (LLM). The project combines document retrieval with AI-generated responses to provide accurate answers based on the uploaded documents.
 
 ---
 
@@ -29,8 +29,8 @@ This project uses two models:
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/jagadiswarambati/documind-rag
-cd documind-rag
+git clone https://github.com/jagadiswarambati/RAGSphere
+cd RAGSphere
 ```
 
 ---
@@ -52,7 +52,7 @@ venv\Scripts\activate
 If activated successfully, your terminal should look like:
 
 ```text
-(venv) C:\Users\YourName\documind-rag>
+(venv) C:\Users\YourName\RAGSphere>
 ```
 
 ---
