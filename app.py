@@ -802,7 +802,7 @@ if __name__ == "__main__":
     )
 
     print(
-        "DocuMind RAG Server"
+        "RAGSPhere RAG Server"
     )
 
     print(

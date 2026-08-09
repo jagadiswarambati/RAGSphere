@@ -6,7 +6,10 @@ import fitz
 import chromadb
 
 
-OLLAMA_URL = "http://127.0.0.1:11434"
+OLLAMA_URL = os.environ.get(
+    'OLLAMA_URL',
+    "http://127.0.0.1:11434"
+)
 
 GENERATION_MODEL = "llama3.2:3b"
 EMBEDDING_MODEL = "nomic-embed-text"
@@ -328,61 +331,77 @@ def add_document(
 
 def retrieve_context(
     question,
-    top_k=5
+    top_k=5,
+    document_id=None
 ):
 
     count = collection.count()
 
-
     if count == 0:
-
         return []
-
 
     question_embedding = get_embedding(
         question
     )
 
+    # Search only inside the selected document
+    if document_id:
 
-    number_of_results = min(
-        top_k,
-        count
-    )
+        results = collection.query(
+            query_embeddings=[
+                question_embedding
+            ],
+            n_results=min(
+                top_k,
+                count
+            ),
+            where={
+                "document_id": document_id
+            },
+            include=[
+                "documents",
+                "metadatas",
+                "distances"
+            ]
+        )
 
+    else:
 
-    results = collection.query(
-        query_embeddings=[
-            question_embedding
-        ],
-        n_results=number_of_results,
-        include=[
-            "documents",
-            "metadatas",
-            "distances"
-        ]
-    )
+        # No document selected:
+        # keep the old behavior for now
+        number_of_results = min(
+            top_k,
+            count
+        )
 
+        results = collection.query(
+            query_embeddings=[
+                question_embedding
+            ],
+            n_results=number_of_results,
+            include=[
+                "documents",
+                "metadatas",
+                "distances"
+            ]
+        )
 
     retrieved = []
-
 
     documents = results.get(
         "documents",
         [[]]
     )[0]
 
-
     metadatas = results.get(
         "metadatas",
         [[]]
     )[0]
 
-
     distances = results.get(
         "distances",
         [[]]
     )[0]
-
 
     for index in range(
         len(documents)
@@ -401,18 +420,16 @@ def retrieve_context(
             )
         )
 
-
         retrieved.append({
             "text": documents[index],
             "source": metadatas[index]["source"],
             "page": metadatas[index]["page"],
             "chunk": metadatas[index]["chunk"],
+            "document_id": metadatas[index]["document_id"],
             "relevance": relevance
         })
 
-
     return retrieved
-
 
 def build_context(retrieved):
 
@@ -544,24 +561,24 @@ Answer the question using only the document context.
 
 def answer_question(
     question,
-    history=None
+    history=None,
+    document_id=None
 ):
 
     retrieved = retrieve_context(
-        question
+        question,
+        document_id=document_id
     )
-
 
     if not retrieved:
 
         return {
             "answer": (
-                "No searchable documents are available. "
-                "Upload a PDF or TXT document first."
+                "No relevant information was found "
+                "in the selected document."
             ),
             "sources": []
         }
-
 
     answer = generate_answer(
         question,
@@ -569,12 +586,9 @@ def answer_question(
         history
     )
 
-
     sources = []
 
-
     seen = set()
-
 
     for item in retrieved:
 
@@ -584,17 +598,12 @@ def answer_question(
             item["chunk"]
         )
 
-
         if source_key in seen:
-
             continue
-
 
         seen.add(source_key)
 
-
         snippet = item["text"]
-
 
         if len(snippet) > 280:
 
@@ -602,7 +611,6 @@ def answer_question(
                 snippet[:280].strip()
                 + "..."
             )
-
 
         sources.append({
             "document": item["source"],
@@ -612,12 +620,10 @@ def answer_question(
             "snippet": snippet
         })
 
-
     return {
         "answer": answer,
         "sources": sources
     }
-
 
 def delete_document(document_id):
 
@@ -631,7 +637,6 @@ def delete_document(document_id):
 def clear_vector_database():
 
     global collection
-
 
     try:
 
