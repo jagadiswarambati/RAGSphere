@@ -1039,7 +1039,7 @@ function resetChat() {
             </h2>
 
             <p>
-                DocuMind uses semantic search and
+                RAGSphere uses semantic search and
                 retrieval-augmented generation to answer
                 questions using only your uploaded documents.
             </p>

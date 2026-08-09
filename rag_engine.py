@@ -478,7 +478,7 @@ def generate_answer(
 
 
     system_prompt = """
-You are DocuMind, a document question answering assistant.
+You are RAGSphere, a document question answering assistant.
 
 Answer using ONLY the supplied document context.
 

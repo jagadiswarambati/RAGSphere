@@ -52,7 +52,7 @@ venv\Scripts\activate
 If activated successfully, your terminal should look like:
 
 ```text
-(venv) C:\Users\YourName\RAGSphere>
+(venv) C:\Users\YourName\documind-rag>
 ```
 
 ---
