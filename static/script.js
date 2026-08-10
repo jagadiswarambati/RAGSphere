@@ -1,5 +1,7 @@
 let documents = [];
 
+let selectedDocumentId = null;
+
 let conversationHistory = [];
 
 let isProcessing = false;
@@ -10,14 +12,18 @@ let pendingConfirmAction = null;
 const fileInput =
     document.getElementById("fileInput");
 
+
 const dropZone =
     document.getElementById("dropZone");
+
 
 const chatMessages =
     document.getElementById("chatMessages");
 
+
 const questionInput =
     document.getElementById("questionInput");
+
 
 const sendButton =
     document.getElementById("sendButton");
@@ -30,6 +36,7 @@ document.addEventListener(
         checkHealth();
 
         loadDocuments();
+
     }
 );
 
@@ -39,6 +46,7 @@ function openFilePicker(event) {
     event.stopPropagation();
 
     fileInput.click();
+
 }
 
 
@@ -51,10 +59,14 @@ dropZone.addEventListener(
                 "browse-button"
             )
         ) {
+
             return;
+
         }
 
+
         fileInput.click();
+
     }
 );
 
@@ -68,7 +80,9 @@ fileInput.addEventListener(
             uploadFiles(
                 fileInput.files
             );
+
         }
+
     }
 );
 
@@ -82,6 +96,7 @@ dropZone.addEventListener(
         dropZone.classList.add(
             "dragging"
         );
+
     }
 );
 
@@ -93,6 +108,7 @@ dropZone.addEventListener(
         dropZone.classList.remove(
             "dragging"
         );
+
     }
 );
 
@@ -115,7 +131,9 @@ dropZone.addEventListener(
         if (files.length > 0) {
 
             uploadFiles(files);
+
         }
+
     }
 );
 
@@ -127,10 +145,12 @@ async function checkHealth() {
             "statusDot"
         );
 
+
     const systemStatus =
         document.getElementById(
             "systemStatus"
         );
+
 
     const modelName =
         document.getElementById(
@@ -156,8 +176,10 @@ async function checkHealth() {
             statusDot.className =
                 "status-dot online";
 
+
             systemStatus.textContent =
                 "AI System Online";
+
 
             modelName.textContent =
                 data.generation_model +
@@ -169,19 +191,25 @@ async function checkHealth() {
             throw new Error(
                 "Ollama unavailable"
             );
+
         }
+
 
     } catch (error) {
 
         statusDot.className =
             "status-dot offline";
 
+
         systemStatus.textContent =
             "AI System Offline";
 
+
         modelName.textContent =
             "Check Ollama service";
+
     }
+
 }
 
 
@@ -203,20 +231,27 @@ async function loadDocuments() {
 
         renderDocuments();
 
+        updateSelectedDocumentUI();
+
+
     } catch (error) {
 
         showToast(
             "Unable to load document library.",
             "error"
         );
+
     }
+
 }
 
 
 async function uploadFiles(files) {
 
     if (isProcessing) {
+
         return;
+
     }
 
 
@@ -235,6 +270,7 @@ async function uploadFiles(files) {
                     extension === "pdf" ||
                     extension === "txt"
                 );
+
             }
         );
 
@@ -247,6 +283,7 @@ async function uploadFiles(files) {
         );
 
         return;
+
     }
 
 
@@ -261,6 +298,7 @@ async function uploadFiles(files) {
                 "files",
                 file
             );
+
         }
     );
 
@@ -294,6 +332,7 @@ async function uploadFiles(files) {
                 data.error ||
                 "Upload failed."
             );
+
         }
 
 
@@ -307,7 +346,24 @@ async function uploadFiles(files) {
             );
 
 
+            /*
+             * Automatically select the latest
+             * successfully uploaded document.
+             */
+            selectedDocumentId =
+                data.uploaded[
+                    data.uploaded.length - 1
+                ].id;
+
+
+            conversationHistory = [];
+
+
             renderDocuments();
+
+            updateSelectedDocumentUI();
+
+            resetChat();
 
 
             showToast(
@@ -315,6 +371,7 @@ async function uploadFiles(files) {
                 " document(s) added to the knowledge base.",
                 "success"
             );
+
         }
 
 
@@ -333,6 +390,7 @@ async function uploadFiles(files) {
                                 ": " +
                                 item.error
                             );
+
                         }
                     )
                     .join(" | ");
@@ -342,6 +400,7 @@ async function uploadFiles(files) {
                 failureMessage,
                 "error"
             );
+
         }
 
 
@@ -352,12 +411,15 @@ async function uploadFiles(files) {
             "error"
         );
 
+
     } finally {
 
         setProcessing(false);
 
         fileInput.value = "";
+
     }
+
 }
 
 
@@ -392,12 +454,15 @@ function setProcessing(
             "hidden"
         );
 
+
     } else {
 
         panel.classList.add(
             "hidden"
         );
+
     }
+
 }
 
 
@@ -419,15 +484,27 @@ function renderDocuments() {
 
         list.innerHTML = `
             <div class="empty-documents">
-                <div class="empty-icon">+</div>
-                <p>No documents uploaded</p>
+
+                <div class="empty-icon">
+                    +
+                </div>
+
+                <p>
+                    No documents uploaded
+                </p>
+
                 <span>
                     Add PDF or TXT files to begin
                 </span>
+
             </div>
         `;
 
+
+        updateSelectedDocumentUI();
+
         return;
+
     }
 
 
@@ -442,36 +519,80 @@ function renderDocuments() {
                         .toUpperCase();
 
 
+                const isSelected =
+                    document.id ===
+                    selectedDocumentId;
+
+
                 return `
-                    <div class="document-card">
+                    <div
+                        class="document-card ${
+                            isSelected
+                                ? "selected"
+                                : ""
+                        }"
+                        onclick="selectDocument(
+                            '${document.id}'
+                        )"
+                    >
 
                         <div class="file-type">
-                            ${escapeHTML(extension)}
+                            ${escapeHTML(
+                                extension
+                            )}
                         </div>
+
 
                         <div class="document-details">
 
                             <strong
-                                title="${escapeHTML(document.name)}"
+                                title="${escapeHTML(
+                                    document.name
+                                )}"
                             >
-                                ${escapeHTML(document.name)}
+                                ${escapeHTML(
+                                    document.name
+                                )}
                             </strong>
 
+
                             <p>
-                                ${document.pages} page(s)
+                                ${document.pages}
+                                page(s)
                                 ·
-                                ${document.chunks} chunks
+                                ${document.chunks}
+                                chunks
                                 ·
-                                ${escapeHTML(document.status)}
+                                ${escapeHTML(
+                                    document.status
+                                )}
                             </p>
 
                         </div>
 
+
+                        ${
+                            isSelected
+                                ? `
+                                    <span
+                                        class="selected-indicator"
+                                        title="Selected document"
+                                    >
+                                        ✓
+                                    </span>
+                                  `
+                                : ""
+                        }
+
+
                         <button
                             class="remove-document"
-                            onclick="confirmRemoveDocument(
-                                '${document.id}'
-                            )"
+                            onclick="
+                                event.stopPropagation();
+                                confirmRemoveDocument(
+                                    '${document.id}'
+                                )
+                            "
                             title="Remove document"
                         >
                             ×
@@ -479,9 +600,123 @@ function renderDocuments() {
 
                     </div>
                 `;
+
             }
         )
         .join("");
+
+
+    updateSelectedDocumentUI();
+
+}
+
+
+function selectDocument(documentId) {
+
+    const selected =
+        documents.find(
+            function (document) {
+
+                return (
+                    document.id ===
+                    documentId
+                );
+
+            }
+        );
+
+
+    if (!selected) {
+
+        return;
+
+    }
+
+
+    selectedDocumentId =
+        documentId;
+
+
+    /*
+     * A different document means a
+     * different conversation context.
+     */
+    conversationHistory = [];
+
+
+    resetChat();
+
+
+    renderDocuments();
+
+
+    updateSelectedDocumentUI();
+
+
+    showToast(
+        "Selected: " +
+        selected.name,
+        "success"
+    );
+
+}
+
+
+function updateSelectedDocumentUI() {
+
+    const nameElement =
+        document.getElementById(
+            "selectedDocumentName"
+        );
+
+
+    if (!nameElement) {
+
+        return;
+
+    }
+
+
+    if (!selectedDocumentId) {
+
+        nameElement.textContent =
+            "No document selected";
+
+        return;
+
+    }
+
+
+    const selected =
+        documents.find(
+            function (document) {
+
+                return (
+                    document.id ===
+                    selectedDocumentId
+                );
+
+            }
+        );
+
+
+    if (!selected) {
+
+        selectedDocumentId = null;
+
+
+        nameElement.textContent =
+            "No document selected";
+
+
+        return;
+
+    }
+
+
+    nameElement.textContent =
+        selected.name;
+
 }
 
 
@@ -491,8 +726,13 @@ async function askQuestion() {
         questionInput.value.trim();
 
 
-    if (!question || isProcessing) {
+    if (
+        !question ||
+        isProcessing
+    ) {
+
         return;
+
     }
 
 
@@ -504,24 +744,50 @@ async function askQuestion() {
         );
 
         return;
+
+    }
+
+
+    /*
+     * A document MUST be selected.
+     */
+    if (!selectedDocumentId) {
+
+        showToast(
+            "Select a document before asking a question.",
+            "error"
+        );
+
+        return;
+
     }
 
 
     removeWelcome();
 
 
-    addUserMessage(question);
+    addUserMessage(
+        question
+    );
 
 
     conversationHistory.push({
-        role: "user",
-        content: question
+
+        role:
+            "user",
+
+        content:
+            question
+
     });
 
 
     questionInput.value = "";
 
-    resizeTextarea(questionInput);
+
+    resizeTextarea(
+        questionInput
+    );
 
 
     const thinkingId =
@@ -529,6 +795,7 @@ async function askQuestion() {
 
 
     isProcessing = true;
+
 
     sendButton.disabled = true;
 
@@ -542,19 +809,34 @@ async function askQuestion() {
                     method: "POST",
 
                     headers: {
+
                         "Content-Type":
                             "application/json"
+
                     },
 
                     body: JSON.stringify({
-                        question: question,
+
+                        question:
+                            question,
+
+
+                        /*
+                         * This is the important
+                         * connection to the backend.
+                         */
+                        document_id:
+                            selectedDocumentId,
+
 
                         history:
                             conversationHistory.slice(
                                 0,
                                 -1
                             )
+
                     })
+
                 }
             );
 
@@ -569,6 +851,7 @@ async function askQuestion() {
                 data.error ||
                 "Unable to generate answer."
             );
+
         }
 
 
@@ -584,8 +867,13 @@ async function askQuestion() {
 
 
         conversationHistory.push({
-            role: "assistant",
-            content: data.answer
+
+            role:
+                "assistant",
+
+            content:
+                data.answer
+
         });
 
 
@@ -597,26 +885,36 @@ async function askQuestion() {
 
 
         addAssistantMessage(
+
             "An error occurred while generating the answer: "
             + error.message,
+
             []
+
         );
+
 
     } finally {
 
         isProcessing = false;
 
+
         sendButton.disabled = false;
 
+
         questionInput.focus();
+
     }
+
 }
 
 
 function addUserMessage(text) {
 
     const wrapper =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     wrapper.className =
@@ -624,9 +922,13 @@ function addUserMessage(text) {
 
 
     wrapper.innerHTML = `
+
         <div class="user-bubble">
+
             ${escapeHTML(text)}
+
         </div>
+
     `;
 
 
@@ -636,6 +938,7 @@ function addUserMessage(text) {
 
 
     scrollChat();
+
 }
 
 
@@ -645,7 +948,9 @@ function addAssistantMessage(
 ) {
 
     const wrapper =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     wrapper.className =
@@ -667,6 +972,7 @@ function addAssistantMessage(
                 function (source) {
 
                     return `
+
                         <div class="source-card">
 
                             <div class="source-header">
@@ -677,13 +983,16 @@ function addAssistantMessage(
                                     )}
                                 </strong>
 
+
                                 <span>
                                     Page ${source.page}
                                     ·
-                                    ${source.relevance}% relevance
+                                    ${source.relevance}%
+                                    relevance
                                 </span>
 
                             </div>
+
 
                             <p>
                                 ${escapeHTML(
@@ -692,13 +1001,16 @@ function addAssistantMessage(
                             </p>
 
                         </div>
+
                     `;
+
                 }
             )
             .join("");
 
 
         sourcesHTML = `
+
             <div class="sources-section">
 
                 <button
@@ -708,8 +1020,10 @@ function addAssistantMessage(
                         this
                     )"
                 >
-                    View ${sources.length} retrieved sources
+                    View ${sources.length}
+                    retrieved sources
                 </button>
+
 
                 <div
                     id="${sourceId}"
@@ -719,14 +1033,18 @@ function addAssistantMessage(
                 </div>
 
             </div>
+
         `;
+
     }
 
 
     wrapper.innerHTML = `
+
         <div class="ai-avatar">
             AI
         </div>
+
 
         <div class="answer-content">
 
@@ -734,9 +1052,11 @@ function addAssistantMessage(
                 ${escapeHTML(answer)}
             </div>
 
+
             ${sourcesHTML}
 
         </div>
+
     `;
 
 
@@ -746,6 +1066,7 @@ function addAssistantMessage(
 
 
     scrollChat();
+
 }
 
 
@@ -757,32 +1078,41 @@ function addThinkingMessage() {
 
 
     const wrapper =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     wrapper.id = id;
+
 
     wrapper.className =
         "message assistant-message";
 
 
     wrapper.innerHTML = `
+
         <div class="ai-avatar">
             AI
         </div>
 
+
         <div class="thinking-box">
 
             <div class="thinking-dots">
+
                 <span></span>
                 <span></span>
                 <span></span>
+
             </div>
+
 
             Retrieving relevant context
             and generating a grounded answer...
 
         </div>
+
     `;
 
 
@@ -795,19 +1125,24 @@ function addThinkingMessage() {
 
 
     return id;
+
 }
 
 
 function removeThinkingMessage(id) {
 
     const element =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
 
     if (element) {
 
         element.remove();
+
     }
+
 }
 
 
@@ -837,6 +1172,7 @@ function toggleSources(
         isHidden
             ? "Hide retrieved sources"
             : "View retrieved sources";
+
 }
 
 
@@ -852,17 +1188,22 @@ function confirmRemoveDocument(
                     item.id ===
                     documentId
                 );
+
             }
         );
 
 
     if (!document) {
+
         return;
+
     }
 
 
     openModal(
+
         "Remove document",
+
         "Remove \"" +
         document.name +
         "\" from the knowledge base? Its vector embeddings will also be deleted.",
@@ -872,8 +1213,11 @@ function confirmRemoveDocument(
             await removeDocument(
                 documentId
             );
+
         }
+
     );
+
 }
 
 
@@ -887,8 +1231,10 @@ async function removeDocument(
             await fetch(
                 "/api/documents/" +
                 documentId,
+
                 {
-                    method: "DELETE"
+                    method:
+                        "DELETE"
                 }
             );
 
@@ -903,6 +1249,7 @@ async function removeDocument(
                 data.error ||
                 "Unable to remove document."
             );
+
         }
 
 
@@ -914,11 +1261,37 @@ async function removeDocument(
                         item.id !==
                         documentId
                     );
+
                 }
             );
 
 
+        /*
+         * If the deleted document was
+         * currently selected, clear it.
+         */
+        if (
+            selectedDocumentId ===
+            documentId
+        ) {
+
+            selectedDocumentId =
+                null;
+
+
+            conversationHistory =
+                [];
+
+
+            resetChat();
+
+        }
+
+
         renderDocuments();
+
+
+        updateSelectedDocumentUI();
 
 
         showToast(
@@ -933,7 +1306,9 @@ async function removeDocument(
             error.message,
             "error"
         );
+
     }
+
 }
 
 
@@ -947,11 +1322,14 @@ function clearDocuments() {
         );
 
         return;
+
     }
 
 
     openModal(
+
         "Clear knowledge base",
+
         "This will remove all uploaded documents and their vector embeddings. This action cannot be undone.",
 
         async function () {
@@ -962,7 +1340,8 @@ function clearDocuments() {
                     await fetch(
                         "/api/clear",
                         {
-                            method: "DELETE"
+                            method:
+                                "DELETE"
                         }
                     );
 
@@ -977,15 +1356,26 @@ function clearDocuments() {
                         data.error ||
                         "Unable to clear documents."
                     );
+
                 }
 
 
                 documents = [];
 
-                conversationHistory = [];
+
+                selectedDocumentId =
+                    null;
+
+
+                conversationHistory =
+                    [];
 
 
                 renderDocuments();
+
+
+                updateSelectedDocumentUI();
+
 
                 resetChat();
 
@@ -1002,15 +1392,20 @@ function clearDocuments() {
                     error.message,
                     "error"
                 );
+
             }
+
         }
+
     );
+
 }
 
 
 function clearChat() {
 
     conversationHistory = [];
+
 
     resetChat();
 
@@ -1019,12 +1414,14 @@ function clearChat() {
         "Conversation cleared.",
         "success"
     );
+
 }
 
 
 function resetChat() {
 
     chatMessages.innerHTML = `
+
         <div
             id="welcomeMessage"
             class="welcome"
@@ -1034,9 +1431,11 @@ function resetChat() {
                 AI
             </div>
 
+
             <h2>
                 Your documents, understood.
             </h2>
+
 
             <p>
                 RAGSphere uses semantic search and
@@ -1044,55 +1443,76 @@ function resetChat() {
                 questions using only your uploaded documents.
             </p>
 
+
             <div class="feature-grid">
 
                 <div class="feature-card">
 
-                    <span>01</span>
+                    <span>
+                        01
+                    </span>
+
 
                     <div>
+
                         <strong>
                             Semantic Retrieval
                         </strong>
+
 
                         <p>
                             Finds relevant information by meaning,
                             not just keywords.
                         </p>
+
                     </div>
 
                 </div>
 
+
                 <div class="feature-card">
 
-                    <span>02</span>
+                    <span>
+                        02
+                    </span>
+
 
                     <div>
+
                         <strong>
                             Grounded Answers
                         </strong>
+
 
                         <p>
                             Responses are generated from retrieved
                             document context.
                         </p>
+
                     </div>
 
                 </div>
 
+
                 <div class="feature-card">
 
-                    <span>03</span>
+                    <span>
+                        03
+                    </span>
+
 
                     <div>
+
                         <strong>
                             Source Evidence
                         </strong>
+
 
                         <p>
                             Inspect document names, pages and
                             retrieved passages.
                         </p>
+
                     </div>
 
                 </div>
@@ -1100,7 +1520,9 @@ function resetChat() {
             </div>
 
         </div>
+
     `;
+
 }
 
 
@@ -1115,7 +1537,9 @@ function removeWelcome() {
     if (welcome) {
 
         welcome.remove();
+
     }
+
 }
 
 
@@ -1128,8 +1552,11 @@ function handleQuestionKey(event) {
 
         event.preventDefault();
 
+
         askQuestion();
+
     }
+
 }
 
 
@@ -1144,20 +1571,25 @@ function resizeTextarea(element) {
             element.scrollHeight,
             120
         ) + "px";
+
 }
 
 
 function scrollChat() {
 
     setTimeout(
+
         function () {
 
             chatMessages.scrollTop =
                 chatMessages.scrollHeight;
+
         },
 
         50
+
     );
+
 }
 
 
@@ -1169,12 +1601,14 @@ function openModal(
 
     document.getElementById(
         "modalTitle"
-    ).textContent = title;
+    ).textContent =
+        title;
 
 
     document.getElementById(
         "modalText"
-    ).textContent = text;
+    ).textContent =
+        text;
 
 
     pendingConfirmAction =
@@ -1195,11 +1629,15 @@ function openModal(
 
             closeModal();
 
+
             if (pendingConfirmAction) {
 
                 await pendingConfirmAction();
+
             }
+
         };
+
 }
 
 
@@ -1210,6 +1648,7 @@ function closeModal() {
     ).classList.add(
         "hidden"
     );
+
 }
 
 
@@ -1234,21 +1673,27 @@ function showToast(
 
 
     setTimeout(
+
         function () {
 
             toast.className =
                 "toast";
+
         },
 
         3500
+
     );
+
 }
 
 
 function escapeHTML(value) {
 
     const div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     div.textContent =
@@ -1256,4 +1701,5 @@ function escapeHTML(value) {
 
 
     return div.innerHTML;
+
 }
