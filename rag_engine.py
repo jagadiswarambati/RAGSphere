@@ -11,14 +11,17 @@ OLLAMA_URL = os.environ.get(
     "http://127.0.0.1:11434"
 )
 
+
 GENERATION_MODEL = "llama3.2:3b"
 EMBEDDING_MODEL = "nomic-embed-text"
+
 
 VECTOR_DB_PATH = os.path.join(
     os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
     "RAGSphere",
     "vector_db"
 )
+
 
 os.makedirs(
     VECTOR_DB_PATH,
@@ -43,17 +46,20 @@ def clean_text(text):
 
     text = text.replace("\x00", " ")
 
+
     text = re.sub(
         r"[ \t]+",
         " ",
         text
     )
 
+
     text = re.sub(
         r"\n{3,}",
         "\n\n",
         text
     )
+
 
     return text.strip()
 
@@ -62,7 +68,9 @@ def extract_pdf(file_path):
 
     pages = []
 
+
     document = fitz.open(file_path)
+
 
     try:
 
@@ -73,7 +81,11 @@ def extract_pdf(file_path):
 
             text = page.get_text("text")
 
-            text = clean_text(text)
+
+            text = clean_text(
+                text
+            )
+
 
             if text:
 
@@ -82,9 +94,11 @@ def extract_pdf(file_path):
                     "page": page_number
                 })
 
+
     finally:
 
         document.close()
+
 
     return pages
 
@@ -102,8 +116,11 @@ def extract_txt(file_path):
             file.read()
         )
 
+
     if not text:
+
         return []
+
 
     return [
         {
@@ -147,7 +164,9 @@ def chunk_text(
 
     chunks = []
 
+
     start = 0
+
 
     text_length = len(text)
 
@@ -165,8 +184,15 @@ def chunk_text(
 
         if end < text_length:
 
-            last_period = chunk.rfind(". ")
-            last_newline = chunk.rfind("\n")
+            last_period = chunk.rfind(
+                ". "
+            )
+
+
+            last_newline = chunk.rfind(
+                "\n"
+            )
+
 
             split_position = max(
                 last_period,
@@ -176,9 +202,16 @@ def chunk_text(
 
             if split_position > chunk_size // 2:
 
-                end = start + split_position + 1
+                end = (
+                    start
+                    + split_position
+                    + 1
+                )
 
-                chunk = text[start:end]
+
+                chunk = text[
+                    start:end
+                ]
 
 
         chunk = chunk.strip()
@@ -186,7 +219,9 @@ def chunk_text(
 
         if chunk:
 
-            chunks.append(chunk)
+            chunks.append(
+                chunk
+            )
 
 
         if end >= text_length:
@@ -194,7 +229,9 @@ def chunk_text(
             break
 
 
-        next_start = end - overlap
+        next_start = (
+            end - overlap
+        )
 
 
         if next_start <= start:
@@ -301,10 +338,18 @@ def add_document(
 
 
             metadatas.append({
-                "document_id": document_id,
-                "source": original_name,
-                "page": page_data["page"],
-                "chunk": chunk_number
+
+                "document_id":
+                    document_id,
+
+                "source":
+                    original_name,
+
+                "page":
+                    page_data["page"],
+
+                "chunk":
+                    chunk_number
             })
 
 
@@ -337,12 +382,16 @@ def retrieve_context(
 
     count = collection.count()
 
+
     if count == 0:
+
         return []
+
 
     question_embedding = get_embedding(
         question
     )
+
 
     # Search only inside the selected document
     if document_id:
@@ -351,13 +400,17 @@ def retrieve_context(
             query_embeddings=[
                 question_embedding
             ],
+
             n_results=min(
                 top_k,
                 count
             ),
+
             where={
-                "document_id": document_id
+                "document_id":
+                    document_id
             },
+
             include=[
                 "documents",
                 "metadatas",
@@ -365,20 +418,26 @@ def retrieve_context(
             ]
         )
 
+
     else:
 
-        # No document selected:
-        # keep the old behavior for now
+        # No document selected.
+        # This branch is kept for compatibility,
+        # but app.py now requires a document
+        # to be selected before asking.
         number_of_results = min(
             top_k,
             count
         )
 
+
         results = collection.query(
             query_embeddings=[
                 question_embedding
             ],
+
             n_results=number_of_results,
+
             include=[
                 "documents",
                 "metadatas",
@@ -386,28 +445,34 @@ def retrieve_context(
             ]
         )
 
+
     retrieved = []
+
 
     documents = results.get(
         "documents",
         [[]]
     )[0]
 
+
     metadatas = results.get(
         "metadatas",
         [[]]
     )[0]
+
 
     distances = results.get(
         "distances",
         [[]]
     )[0]
 
+
     for index in range(
         len(documents)
     ):
 
         distance = distances[index]
+
 
         relevance = max(
             0,
@@ -420,16 +485,31 @@ def retrieve_context(
             )
         )
 
+
         retrieved.append({
-            "text": documents[index],
-            "source": metadatas[index]["source"],
-            "page": metadatas[index]["page"],
-            "chunk": metadatas[index]["chunk"],
-            "document_id": metadatas[index]["document_id"],
-            "relevance": relevance
+
+            "text":
+                documents[index],
+
+            "source":
+                metadatas[index]["source"],
+
+            "page":
+                metadatas[index]["page"],
+
+            "chunk":
+                metadatas[index]["chunk"],
+
+            "document_id":
+                metadatas[index]["document_id"],
+
+            "relevance":
+                relevance
         })
 
+
     return retrieved
+
 
 def build_context(retrieved):
 
@@ -442,6 +522,7 @@ def build_context(retrieved):
     ):
 
         context_parts.append(
+
             f"""
 SOURCE {index}
 Document: {item['source']}
@@ -449,6 +530,7 @@ Page: {item['page']}
 Content:
 {item['text']}
 """.strip()
+
         )
 
 
@@ -483,10 +565,12 @@ def generate_answer(
                 "user"
             )
 
+
             content = item.get(
                 "content",
                 ""
             )
+
 
             history_text += (
                 f"{role.upper()}: "
@@ -495,6 +579,7 @@ def generate_answer(
 
 
     system_prompt = """
+
 You are RAGSphere, a document question answering assistant.
 
 Answer using ONLY the supplied document context.
@@ -507,45 +592,71 @@ Rules:
 4. Combine information from multiple sources when necessary.
 5. Do not invent facts, names, dates, numbers, or citations.
 6. When useful, mention the source document naturally.
+
 """.strip()
 
 
     user_prompt = f"""
+
 DOCUMENT CONTEXT:
 
 {context}
+
 
 RECENT CONVERSATION:
 
 {history_text}
 
+
 QUESTION:
 
 {question}
 
+
 Answer the question using only the document context.
+
 """.strip()
 
 
     response = requests.post(
+
         f"{OLLAMA_URL}/api/chat",
+
         json={
-            "model": GENERATION_MODEL,
-            "stream": False,
+
+            "model":
+                GENERATION_MODEL,
+
+            "stream":
+                False,
+
             "messages": [
+
                 {
-                    "role": "system",
-                    "content": system_prompt
+                    "role":
+                        "system",
+
+                    "content":
+                        system_prompt
                 },
+
                 {
-                    "role": "user",
-                    "content": user_prompt
+                    "role":
+                        "user",
+
+                    "content":
+                        user_prompt
                 }
+
             ],
+
             "options": {
-                "temperature": 0.2
+
+                "temperature":
+                    0.2
             }
         },
+
         timeout=300
     )
 
@@ -556,7 +667,11 @@ Answer the question using only the document context.
     data = response.json()
 
 
-    return data["message"]["content"]
+    return data[
+        "message"
+    ][
+        "content"
+    ]
 
 
 def answer_question(
@@ -570,15 +685,19 @@ def answer_question(
         document_id=document_id
     )
 
+
     if not retrieved:
 
         return {
+
             "answer": (
                 "No relevant information was found "
                 "in the selected document."
             ),
+
             "sources": []
         }
+
 
     answer = generate_answer(
         question,
@@ -586,9 +705,12 @@ def answer_question(
         history
     )
 
+
     sources = []
 
+
     seen = set()
+
 
     for item in retrieved:
 
@@ -598,12 +720,19 @@ def answer_question(
             item["chunk"]
         )
 
+
         if source_key in seen:
+
             continue
 
-        seen.add(source_key)
+
+        seen.add(
+            source_key
+        )
+
 
         snippet = item["text"]
+
 
         if len(snippet) > 280:
 
@@ -612,25 +741,47 @@ def answer_question(
                 + "..."
             )
 
+
         sources.append({
-            "document": item["source"],
-            "page": item["page"],
-            "chunk": item["chunk"],
-            "relevance": item["relevance"],
-            "snippet": snippet
+
+            "document":
+                item["source"],
+
+            "page":
+                item["page"],
+
+            "chunk":
+                item["chunk"],
+
+            "relevance":
+                item["relevance"],
+
+            "snippet":
+                snippet
         })
 
+
     return {
-        "answer": answer,
-        "sources": sources
+
+        "answer":
+            answer,
+
+        "sources":
+            sources
     }
 
-def delete_document(document_id):
+
+def delete_document(
+    document_id
+):
 
     collection.delete(
+
         where={
-            "document_id": document_id
+            "document_id":
+                document_id
         }
+
     )
 
 
@@ -638,11 +789,13 @@ def clear_vector_database():
 
     global collection
 
+
     try:
 
         client.delete_collection(
             name="documind_documents"
         )
+
 
     except Exception:
 
@@ -650,10 +803,14 @@ def clear_vector_database():
 
 
     collection = client.get_or_create_collection(
+
         name="documind_documents",
+
         metadata={
-            "hnsw:space": "cosine"
+            "hnsw:space":
+                "cosine"
         }
+
     )
 
 
@@ -666,7 +823,9 @@ def check_ollama():
             timeout=5
         )
 
+
         return response.ok
+
 
     except requests.RequestException:
 
