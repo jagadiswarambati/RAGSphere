@@ -526,6 +526,13 @@ def ask_question():
     )
 
 
+    # NEW:
+    # Receive the selected document ID
+    document_id = data.get(
+        "document_id"
+    )
+
+
     if not isinstance(
         question,
         str
@@ -579,11 +586,40 @@ def ask_question():
         }), 400
 
 
+    # NEW:
+    # A document must be explicitly selected.
+    if not document_id:
+
+        return jsonify({
+
+            "error":
+                "Please select a document before asking a question."
+
+        }), 400
+
+
+    # NEW:
+    # Make sure the selected document
+    # actually exists in the document library.
+    if document_id not in documents:
+
+        return jsonify({
+
+            "error":
+                "Selected document was not found."
+
+        }), 404
+
+
     try:
 
+        # NEW:
+        # Pass the selected document ID
+        # into the RAG engine.
         result = answer_question(
             question,
-            history
+            history,
+            document_id
         )
 
 
@@ -797,37 +833,46 @@ if __name__ == "__main__":
 
     print()
 
+
     print(
         "=" * 60
     )
+
 
     print(
         "RAGSPhere RAG Server"
     )
 
+
     print(
         "=" * 60
     )
+
 
     print(
         "Generation model : llama3.2:3b"
     )
 
+
     print(
         "Embedding model  : nomic-embed-text"
     )
+
 
     print(
         f"Saved documents  : {len(documents)}"
     )
 
+
     print(
         "Server           : http://127.0.0.1:5000"
     )
 
+
     print(
         "=" * 60
     )
+
 
     print()
 
