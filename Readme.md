@@ -130,7 +130,7 @@ nomic-embed-text
 ## Step 9: Start the Flask Application
 
 ```bash
-python app.py
+python backend\app.py
 ```
 
 If everything is configured correctly, you should see:
