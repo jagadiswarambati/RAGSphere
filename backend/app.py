@@ -26,18 +26,23 @@ from rag_engine import (
 # ============================================================
 
 BASE_DIR = os.path.abspath(
-    os.path.dirname(__file__)
+    os.path.join(
+        os.path.dirname(__file__),
+        ".."
+    )
 )
 
 
 UPLOAD_FOLDER = os.path.join(
     BASE_DIR,
+    "data",
     "uploads"
 )
 
 
 DOCUMENTS_FILE = os.path.join(
     BASE_DIR,
+    "data",
     "documents.json"
 )
 
@@ -61,8 +66,11 @@ MAX_FILE_SIZE = (
 
 app = Flask(
     __name__,
-    static_folder="static",
-    static_url_path="/static"
+    static_folder=os.path.join(
+        BASE_DIR,
+        "frontend"
+    ),
+    static_url_path=""
 )
 
 
