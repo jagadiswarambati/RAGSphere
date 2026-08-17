@@ -376,96 +376,84 @@ def add_document(
 
 def retrieve_context(
     question,
-    top_k=5,
-    document_id=None
+    selected_document_ids=None,
+    top_k=5
 ):
-
     count = collection.count()
 
-
     if count == 0:
-
         return []
 
+    # A document must be selected
+    if not selected_document_ids:
+        return []
+
+    # Make sure a single ID also works
+    if isinstance(selected_document_ids, str):
+        selected_document_ids = [selected_document_ids]
 
     question_embedding = get_embedding(
         question
     )
 
+    number_of_results = min(
+        top_k,
+        count
+    )
 
-    # Search only inside the selected document
-    if document_id:
+    # Search ONLY inside selected documents
+    if len(selected_document_ids) == 1:
 
-        results = collection.query(
-            query_embeddings=[
-                question_embedding
-            ],
-
-            n_results=min(
-                top_k,
-                count
-            ),
-
-            where={
-                "document_id":
-                    document_id
-            },
-
-            include=[
-                "documents",
-                "metadatas",
-                "distances"
-            ]
-        )
-
+        where_filter = {
+            "document_id": selected_document_ids[0]
+        }
 
     else:
 
-        # No document selected.
-        # This branch is kept for compatibility,
-        # but app.py now requires a document
-        # to be selected before asking.
-        number_of_results = min(
-            top_k,
-            count
-        )
+        where_filter = {
+            "document_id": {
+                "$in": selected_document_ids
+            }
+        }
 
-
-        results = collection.query(
-            query_embeddings=[
-                question_embedding
-            ],
-
-            n_results=number_of_results,
-
-            include=[
-                "documents",
-                "metadatas",
-                "distances"
-            ]
-        )
-
-
-    retrieved = []
-
+    results = collection.query(
+        query_embeddings=[
+            question_embedding
+        ],
+        n_results=number_of_results,
+        where=where_filter,
+        include=[
+            "documents",
+            "metadatas",
+            "distances"
+        ]
+    )
 
     documents = results.get(
         "documents",
         [[]]
     )[0]
 
-
     metadatas = results.get(
         "metadatas",
         [[]]
     )[0]
-
 
     distances = results.get(
         "distances",
         [[]]
     )[0]
 
+    print("\n========== RAG RETRIEVAL ==========")
+    print("QUESTION:", question)
+    print("SELECTED DOCUMENT IDS:", selected_document_ids)
+    print("COLLECTION COUNT:", count)
+    print("RESULTS FOUND:", len(documents))
+
+    retrieved = []
+
+    # Similarity threshold
+    MAX_DISTANCE = 0.60
 
     for index in range(
         len(documents)
@@ -473,6 +461,17 @@ def retrieve_context(
 
         distance = distances[index]
 
+        print(
+            f"\nRESULT {index + 1}"
+            f"\nSource: {metadatas[index].get('source')}"
+            f"\nDocument ID: {metadatas[index].get('document_id')}"
+            f"\nDistance: {distance}"
+            f"\nText: {documents[index][:150]}"
+        )
+
+        # Reject weak matches
+        if distance > MAX_DISTANCE:
+            continue
 
         relevance = max(
             0,
@@ -485,28 +484,23 @@ def retrieve_context(
             )
         )
 
-
         retrieved.append({
-
-            "text":
-                documents[index],
-
-            "source":
-                metadatas[index]["source"],
-
-            "page":
-                metadatas[index]["page"],
-
-            "chunk":
-                metadatas[index]["chunk"],
-
-            "document_id":
-                metadatas[index]["document_id"],
-
-            "relevance":
-                relevance
+            "text": documents[index],
+            "source": metadatas[index]["source"],
+            "page": metadatas[index]["page"],
+            "chunk": metadatas[index]["chunk"],
+            "document_id": metadatas[index]["document_id"],
+            "relevance": relevance
         })
 
+    print(
+        "\nRELEVANT RESULTS:",
+        len(retrieved)
+    )
+
+    print(
+        "===================================\n"
+    )
 
     return retrieved
 
@@ -676,28 +670,24 @@ Answer the question using only the document context.
 
 def answer_question(
     question,
-    history=None,
-    document_id=None
+    selected_document_ids,
+    history=None
 ):
 
     retrieved = retrieve_context(
         question,
-        document_id=document_id
+        selected_document_ids
     )
-
 
     if not retrieved:
 
         return {
-
             "answer": (
                 "No relevant information was found "
-                "in the selected document."
+                "in the selected document(s)."
             ),
-
             "sources": []
         }
-
 
     answer = generate_answer(
         question,
@@ -705,12 +695,9 @@ def answer_question(
         history
     )
 
-
     sources = []
 
-
     seen = set()
-
 
     for item in retrieved:
 
@@ -720,19 +707,14 @@ def answer_question(
             item["chunk"]
         )
 
-
         if source_key in seen:
-
             continue
-
 
         seen.add(
             source_key
         )
 
-
         snippet = item["text"]
-
 
         if len(snippet) > 280:
 
@@ -741,33 +723,17 @@ def answer_question(
                 + "..."
             )
 
-
         sources.append({
-
-            "document":
-                item["source"],
-
-            "page":
-                item["page"],
-
-            "chunk":
-                item["chunk"],
-
-            "relevance":
-                item["relevance"],
-
-            "snippet":
-                snippet
+            "document": item["source"],
+            "page": item["page"],
+            "chunk": item["chunk"],
+            "relevance": item["relevance"],
+            "snippet": snippet
         })
 
-
     return {
-
-        "answer":
-            answer,
-
-        "sources":
-            sources
+        "answer": answer,
+        "sources": sources
     }
 
 

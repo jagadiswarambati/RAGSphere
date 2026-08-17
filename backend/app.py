@@ -534,12 +534,32 @@ def ask_question():
     )
 
 
-    # NEW:
-    # Receive the selected document ID
-    document_id = data.get(
-        "document_id"
+    # --------------------------------------------------------
+    # Selected documents
+    # --------------------------------------------------------
+
+    selected_document_ids = data.get(
+        "selected_document_ids"
     )
 
+
+    # Backward compatibility:
+    # support the old single-document field too
+    if selected_document_ids is None:
+
+        single_document_id = data.get(
+            "document_id"
+        )
+
+        if single_document_id:
+            selected_document_ids = [
+                single_document_id
+            ]
+
+
+    # --------------------------------------------------------
+    # Validate question
+    # --------------------------------------------------------
 
     if not isinstance(
         question,
@@ -547,15 +567,17 @@ def ask_question():
     ):
 
         return jsonify({
-
             "error":
                 "Question must be text."
-
         }), 400
 
 
     question = question.strip()
 
+
+    # --------------------------------------------------------
+    # History
+    # --------------------------------------------------------
 
     history = data.get(
         "history",
@@ -571,63 +593,89 @@ def ask_question():
         history = []
 
 
+    # --------------------------------------------------------
+    # Basic validation
+    # --------------------------------------------------------
+
     if not question:
 
         return jsonify({
-
             "error":
                 "Question cannot be empty."
-
         }), 400
 
 
     if not documents:
 
         return jsonify({
-
             "error":
                 (
                     "No documents are available. "
                     "Upload a PDF or TXT file first."
                 )
-
         }), 400
 
 
-    # NEW:
-    # A document must be explicitly selected.
-    if not document_id:
+    # --------------------------------------------------------
+    # Selected document validation
+    # --------------------------------------------------------
+
+    if not isinstance(
+        selected_document_ids,
+        list
+    ):
 
         return jsonify({
-
             "error":
-                "Please select a document before asking a question."
-
+                "Selected documents must be provided as a list."
         }), 400
 
 
-    # NEW:
-    # Make sure the selected document
-    # actually exists in the document library.
-    if document_id not in documents:
+    if not selected_document_ids:
 
         return jsonify({
-
             "error":
-                "Selected document was not found."
+                "Please select at least one document before asking a question."
+        }), 400
 
+
+    # Remove duplicates while preserving order
+    selected_document_ids = list(
+        dict.fromkeys(
+            selected_document_ids
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # Make sure every selected document exists
+    # --------------------------------------------------------
+
+    missing_documents = [
+        document_id
+        for document_id in selected_document_ids
+        if document_id not in documents
+    ]
+
+
+    if missing_documents:
+
+        return jsonify({
+            "error":
+                "One or more selected documents were not found."
         }), 404
 
 
+    # --------------------------------------------------------
+    # RAG QUESTION ANSWERING
+    # --------------------------------------------------------
+
     try:
 
-        # NEW:
-        # Pass the selected document ID
-        # into the RAG engine.
         result = answer_question(
             question,
-            history,
-            document_id
+            selected_document_ids,
+            history
         )
 
 
@@ -645,10 +693,8 @@ def ask_question():
 
 
         return jsonify({
-
             "error":
                 str(error)
-
         }), 500
 
 
