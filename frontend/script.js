@@ -1,6 +1,6 @@
 let documents = [];
 
-let selectedDocumentId = null;
+let selectedDocumentIds = [];
 
 let conversationHistory = [];
 
@@ -9,25 +9,39 @@ let isProcessing = false;
 let pendingConfirmAction = null;
 
 
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
 const fileInput =
     document.getElementById("fileInput");
-
 
 const dropZone =
     document.getElementById("dropZone");
 
-
 const chatMessages =
     document.getElementById("chatMessages");
-
 
 const questionInput =
     document.getElementById("questionInput");
 
-
 const sendButton =
     document.getElementById("sendButton");
 
+
+/*
+ * The HTML may use documentList, document-list,
+ * or documents-list depending on the current frontend.
+ */
+const documentList =
+    document.getElementById("documentList") ||
+    document.querySelector(".document-list") ||
+    document.querySelector(".documents-list");
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -41,102 +55,127 @@ document.addEventListener(
 );
 
 
+/* =========================================================
+   FILE PICKER
+========================================================= */
+
 function openFilePicker(event) {
 
-    event.stopPropagation();
+    if (event) {
+        event.stopPropagation();
+    }
 
-    fileInput.click();
+    if (fileInput) {
+        fileInput.click();
+    }
 
 }
 
 
-dropZone.addEventListener(
-    "click",
-    function (event) {
+/* =========================================================
+   DROP ZONE
+========================================================= */
 
-        if (
-            event.target.classList.contains(
-                "browse-button"
-            )
-        ) {
+if (dropZone) {
 
-            return;
+    dropZone.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                event.target.classList.contains(
+                    "browse-button"
+                )
+            ) {
+                return;
+            }
+
+            if (fileInput) {
+                fileInput.click();
+            }
 
         }
+    );
 
 
-        fileInput.click();
+    dropZone.addEventListener(
+        "dragover",
+        function (event) {
 
-    }
-);
+            event.preventDefault();
 
-
-fileInput.addEventListener(
-    "change",
-    function () {
-
-        if (fileInput.files.length > 0) {
-
-            uploadFiles(
-                fileInput.files
+            dropZone.classList.add(
+                "dragging"
             );
 
         }
-
-    }
-);
+    );
 
 
-dropZone.addEventListener(
-    "dragover",
-    function (event) {
+    dropZone.addEventListener(
+        "dragleave",
+        function () {
 
-        event.preventDefault();
-
-        dropZone.classList.add(
-            "dragging"
-        );
-
-    }
-);
-
-
-dropZone.addEventListener(
-    "dragleave",
-    function () {
-
-        dropZone.classList.remove(
-            "dragging"
-        );
-
-    }
-);
-
-
-dropZone.addEventListener(
-    "drop",
-    function (event) {
-
-        event.preventDefault();
-
-        dropZone.classList.remove(
-            "dragging"
-        );
-
-
-        const files =
-            event.dataTransfer.files;
-
-
-        if (files.length > 0) {
-
-            uploadFiles(files);
+            dropZone.classList.remove(
+                "dragging"
+            );
 
         }
+    );
 
-    }
-);
 
+    dropZone.addEventListener(
+        "drop",
+        function (event) {
+
+            event.preventDefault();
+
+            dropZone.classList.remove(
+                "dragging"
+            );
+
+            const files =
+                event.dataTransfer.files;
+
+            if (files.length > 0) {
+
+                uploadFiles(files);
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILE INPUT
+========================================================= */
+
+if (fileInput) {
+
+    fileInput.addEventListener(
+        "change",
+        function () {
+
+            if (fileInput.files.length > 0) {
+
+                uploadFiles(
+                    fileInput.files
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
 
 async function checkHealth() {
 
@@ -145,12 +184,10 @@ async function checkHealth() {
             "statusDot"
         );
 
-
     const systemStatus =
         document.getElementById(
             "systemStatus"
         );
-
 
     const modelName =
         document.getElementById(
@@ -161,7 +198,9 @@ async function checkHealth() {
     try {
 
         const response =
-            await fetch("/api/health");
+            await fetch(
+                "/api/health"
+            );
 
 
         const data =
@@ -173,18 +212,30 @@ async function checkHealth() {
             data.status === "healthy"
         ) {
 
-            statusDot.className =
-                "status-dot online";
+            if (statusDot) {
+
+                statusDot.className =
+                    "status-dot online";
+
+            }
 
 
-            systemStatus.textContent =
-                "AI System Online";
+            if (systemStatus) {
+
+                systemStatus.textContent =
+                    "AI System Online";
+
+            }
 
 
-            modelName.textContent =
-                data.generation_model +
-                " + " +
-                data.embedding_model;
+            if (modelName) {
+
+                modelName.textContent =
+                    data.generation_model +
+                    " + " +
+                    data.embedding_model;
+
+            }
 
         } else {
 
@@ -197,36 +248,85 @@ async function checkHealth() {
 
     } catch (error) {
 
-        statusDot.className =
-            "status-dot offline";
+        if (statusDot) {
+
+            statusDot.className =
+                "status-dot offline";
+
+        }
 
 
-        systemStatus.textContent =
-            "AI System Offline";
+        if (systemStatus) {
+
+            systemStatus.textContent =
+                "AI System Offline";
+
+        }
 
 
-        modelName.textContent =
-            "Check Ollama service";
+        if (modelName) {
+
+            modelName.textContent =
+                "Check Ollama service";
+
+        }
 
     }
 
 }
 
 
+/* =========================================================
+   LOAD DOCUMENTS
+========================================================= */
+
 async function loadDocuments() {
 
     try {
 
         const response =
-            await fetch("/api/documents");
+            await fetch(
+                "/api/documents"
+            );
 
 
         const data =
             await response.json();
 
 
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Unable to load documents."
+            );
+
+        }
+
+
         documents =
             data.documents || [];
+
+
+        /*
+         * Remove selections that no longer exist.
+         */
+        const existingIds =
+            new Set(
+                documents.map(
+                    function (document) {
+                        return document.id;
+                    }
+                )
+            );
+
+
+        selectedDocumentIds =
+            selectedDocumentIds.filter(
+                function (id) {
+                    return existingIds.has(id);
+                }
+            );
 
 
         renderDocuments();
@@ -245,6 +345,10 @@ async function loadDocuments() {
 
 }
 
+
+/* =========================================================
+   UPLOAD DOCUMENTS
+========================================================= */
 
 async function uploadFiles(files) {
 
@@ -341,19 +445,31 @@ async function uploadFiles(files) {
             data.uploaded.length > 0
         ) {
 
+            /*
+             * Add uploaded documents to the
+             * current document library.
+             */
             documents.push(
                 ...data.uploaded
             );
 
 
             /*
-             * Automatically select the latest
-             * successfully uploaded document.
+             * Automatically select ONLY the
+             * newly uploaded documents.
+             *
+             * This is intentional because the
+             * user should explicitly select older
+             * documents if they want them included.
              */
-            selectedDocumentId =
-                data.uploaded[
-                    data.uploaded.length - 1
-                ].id;
+            selectedDocumentIds =
+                data.uploaded.map(
+                    function (document) {
+
+                        return document.id;
+
+                    }
+                );
 
 
             conversationHistory = [];
@@ -416,12 +532,21 @@ async function uploadFiles(files) {
 
         setProcessing(false);
 
-        fileInput.value = "";
+
+        if (fileInput) {
+
+            fileInput.value = "";
+
+        }
 
     }
 
 }
 
+
+/* =========================================================
+   PROCESSING STATE
+========================================================= */
 
 function setProcessing(
     state,
@@ -438,16 +563,41 @@ function setProcessing(
         );
 
 
+    if (!panel) {
+
+        return;
+
+    }
+
+
     if (state) {
 
-        document.getElementById(
-            "processingTitle"
-        ).textContent = title;
+        const titleElement =
+            document.getElementById(
+                "processingTitle"
+            );
 
 
-        document.getElementById(
-            "processingText"
-        ).textContent = message;
+        const textElement =
+            document.getElementById(
+                "processingText"
+            );
+
+
+        if (titleElement) {
+
+            titleElement.textContent =
+                title;
+
+        }
+
+
+        if (textElement) {
+
+            textElement.textContent =
+                message;
+
+        }
 
 
         panel.classList.remove(
@@ -466,23 +616,41 @@ function setProcessing(
 }
 
 
+/* =========================================================
+   RENDER DOCUMENT LIBRARY
+========================================================= */
+
 function renderDocuments() {
 
-    const list =
+    const countElement =
         document.getElementById(
-            "documentList"
+            "documentCount"
         );
 
 
-    document.getElementById(
-        "documentCount"
-    ).textContent =
-        documents.length;
+    if (countElement) {
+
+        countElement.textContent =
+            documents.length;
+
+    }
+
+
+    if (!documentList) {
+
+        console.error(
+            "RAGSphere: document list container not found."
+        );
+
+        return;
+
+    }
 
 
     if (documents.length === 0) {
 
-        list.innerHTML = `
+        documentList.innerHTML = `
+
             <div class="empty-documents">
 
                 <div class="empty-icon">
@@ -498,6 +666,7 @@ function renderDocuments() {
                 </span>
 
             </div>
+
         `;
 
 
@@ -508,108 +677,135 @@ function renderDocuments() {
     }
 
 
-    list.innerHTML =
-        documents.map(
-            function (document) {
+    documentList.innerHTML =
+        documents
+            .map(
+                function (document) {
 
-                const extension =
-                    document.name
-                        .split(".")
-                        .pop()
-                        .toUpperCase();
-
-
-                const isSelected =
-                    document.id ===
-                    selectedDocumentId;
+                    const extension =
+                        document.name
+                            .split(".")
+                            .pop()
+                            .toUpperCase();
 
 
-                return `
-                    <div
-                        class="document-card ${
-                            isSelected
-                                ? "selected"
-                                : ""
-                        }"
-                        onclick="selectDocument(
-                            '${document.id}'
-                        )"
-                    >
-
-                        <div class="file-type">
-                            ${escapeHTML(
-                                extension
-                            )}
-                        </div>
+                    const isSelected =
+                        selectedDocumentIds.includes(
+                            document.id
+                        );
 
 
-                        <div class="document-details">
+                    return `
 
-                            <strong
-                                title="${escapeHTML(
-                                    document.name
-                                )}"
-                            >
-                                ${escapeHTML(
-                                    document.name
-                                )}
-                            </strong>
-
-
-                            <p>
-                                ${document.pages}
-                                page(s)
-                                ·
-                                ${document.chunks}
-                                chunks
-                                ·
-                                ${escapeHTML(
-                                    document.status
-                                )}
-                            </p>
-
-                        </div>
-
-
-                        ${
-                            isSelected
-                                ? `
-                                    <span
-                                        class="selected-indicator"
-                                        title="Selected document"
-                                    >
-                                        ✓
-                                    </span>
-                                  `
-                                : ""
-                        }
-
-
-                        <button
-                            class="remove-document"
-                            onclick="
-                                event.stopPropagation();
-                                confirmRemoveDocument(
-                                    '${document.id}'
-                                )
-                            "
-                            title="Remove document"
+                        <div
+                            class="document-card ${
+                                isSelected
+                                    ? "selected"
+                                    : ""
+                            }"
+                            onclick="selectDocument('${escapeAttribute(
+                                document.id
+                            )}')"
                         >
-                            ×
-                        </button>
 
-                    </div>
-                `;
+                            <div class="file-type">
 
-            }
-        )
-        .join("");
+                                ${escapeHTML(
+                                    extension
+                                )}
+
+                            </div>
+
+
+                            <div class="document-details">
+
+                                <strong
+                                    title="${escapeAttribute(
+                                        document.name
+                                    )}"
+                                >
+
+                                    ${escapeHTML(
+                                        document.name
+                                    )}
+
+                                </strong>
+
+
+                                <p>
+
+                                    ${escapeHTML(
+                                        document.pages
+                                    )}
+
+                                    page(s)
+
+                                    ·
+
+                                    ${escapeHTML(
+                                        document.chunks
+                                    )}
+
+                                    chunks
+
+                                    ·
+
+                                    ${escapeHTML(
+                                        document.status
+                                    )}
+
+                                </p>
+
+                            </div>
+
+
+                            ${
+                                isSelected
+                                    ? `
+
+                                        <span
+                                            class="selected-indicator"
+                                            title="Selected document"
+                                        >
+                                            ✓
+                                        </span>
+
+                                      `
+                                    : ""
+                            }
+
+
+                            <button
+                                class="remove-document"
+                                onclick="
+                                    event.stopPropagation();
+                                    confirmRemoveDocument('${escapeAttribute(
+                                        document.id
+                                    )}')
+                                "
+                                title="Remove document"
+                            >
+                                ×
+                            </button>
+
+
+                        </div>
+
+                    `;
+
+                }
+            )
+            .join("");
 
 
     updateSelectedDocumentUI();
 
 }
 
+
+/* =========================================================
+   SELECT / UNSELECT DOCUMENT
+========================================================= */
 
 function selectDocument(documentId) {
 
@@ -633,13 +829,46 @@ function selectDocument(documentId) {
     }
 
 
-    selectedDocumentId =
-        documentId;
+    /*
+     * Toggle selection.
+     *
+     * Selected:
+     *     remove it.
+     *
+     * Not selected:
+     *     add it.
+     */
+    if (
+        selectedDocumentIds.includes(
+            documentId
+        )
+    ) {
+
+        selectedDocumentIds =
+            selectedDocumentIds.filter(
+                function (id) {
+
+                    return (
+                        id !==
+                        documentId
+                    );
+
+                }
+            );
+
+    } else {
+
+        selectedDocumentIds.push(
+            documentId
+        );
+
+    }
 
 
     /*
-     * A different document means a
-     * different conversation context.
+     * Changing selected documents means
+     * the previous conversation context
+     * should not be reused.
      */
     conversationHistory = [];
 
@@ -652,15 +881,12 @@ function selectDocument(documentId) {
 
     updateSelectedDocumentUI();
 
-
-    showToast(
-        "Selected: " +
-        selected.name,
-        "success"
-    );
-
 }
 
+
+/* =========================================================
+   SELECTED DOCUMENT UI
+========================================================= */
 
 function updateSelectedDocumentUI() {
 
@@ -677,7 +903,9 @@ function updateSelectedDocumentUI() {
     }
 
 
-    if (!selectedDocumentId) {
+    if (
+        selectedDocumentIds.length === 0
+    ) {
 
         nameElement.textContent =
             "No document selected";
@@ -687,26 +915,44 @@ function updateSelectedDocumentUI() {
     }
 
 
-    const selected =
-        documents.find(
+    const selectedDocuments =
+        documents.filter(
             function (document) {
 
-                return (
-                    document.id ===
-                    selectedDocumentId
+                return selectedDocumentIds.includes(
+                    document.id
                 );
 
             }
         );
 
 
-    if (!selected) {
+    /*
+     * If selected IDs no longer exist,
+     * clean them up.
+     */
+    if (
+        selectedDocuments.length === 0
+    ) {
 
-        selectedDocumentId = null;
+        selectedDocumentIds = [];
 
 
         nameElement.textContent =
             "No document selected";
+
+
+        return;
+
+    }
+
+
+    if (
+        selectedDocuments.length === 1
+    ) {
+
+        nameElement.textContent =
+            selectedDocuments[0].name;
 
 
         return;
@@ -715,12 +961,24 @@ function updateSelectedDocumentUI() {
 
 
     nameElement.textContent =
-        selected.name;
+        selectedDocuments.length +
+        " documents selected";
 
 }
 
 
+/* =========================================================
+   ASK QUESTION
+========================================================= */
+
 async function askQuestion() {
+
+    if (!questionInput) {
+
+        return;
+
+    }
+
 
     const question =
         questionInput.value.trim();
@@ -736,7 +994,9 @@ async function askQuestion() {
     }
 
 
-    if (documents.length === 0) {
+    if (
+        documents.length === 0
+    ) {
 
         showToast(
             "Upload at least one document before asking questions.",
@@ -749,12 +1009,15 @@ async function askQuestion() {
 
 
     /*
-     * A document MUST be selected.
+     * A question cannot be asked without
+     * at least one selected document.
      */
-    if (!selectedDocumentId) {
+    if (
+        selectedDocumentIds.length === 0
+    ) {
 
         showToast(
-            "Select a document before asking a question.",
+            "Select at least one document before asking a question.",
             "error"
         );
 
@@ -771,6 +1034,9 @@ async function askQuestion() {
     );
 
 
+    /*
+     * Save the user message.
+     */
     conversationHistory.push({
 
         role:
@@ -797,11 +1063,21 @@ async function askQuestion() {
     isProcessing = true;
 
 
-    sendButton.disabled = true;
+    if (sendButton) {
+
+        sendButton.disabled = true;
+
+    }
 
 
     try {
 
+        /*
+         * IMPORTANT:
+         *
+         * selected_document_ids is sent
+         * directly to the backend.
+         */
         const response =
             await fetch(
                 "/api/ask",
@@ -815,27 +1091,22 @@ async function askQuestion() {
 
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        question:
-                            question,
+                            question:
+                                question,
 
+                            selected_document_ids:
+                                selectedDocumentIds,
 
-                        /*
-                         * This is the important
-                         * connection to the backend.
-                         */
-                        document_id:
-                            selectedDocumentId,
+                            history:
+                                conversationHistory.slice(
+                                    0,
+                                    -1
+                                )
 
-
-                        history:
-                            conversationHistory.slice(
-                                0,
-                                -1
-                            )
-
-                    })
+                        })
 
                 }
             );
@@ -866,6 +1137,9 @@ async function askQuestion() {
         );
 
 
+        /*
+         * Save assistant response.
+         */
         conversationHistory.push({
 
             role:
@@ -886,20 +1160,23 @@ async function askQuestion() {
 
         addAssistantMessage(
 
-            "An error occurred while generating the answer: "
-            + error.message,
+            "An error occurred while generating the answer: " +
+            error.message,
 
             []
 
         );
-
 
     } finally {
 
         isProcessing = false;
 
 
-        sendButton.disabled = false;
+        if (sendButton) {
+
+            sendButton.disabled = false;
+
+        }
 
 
         questionInput.focus();
@@ -909,7 +1186,18 @@ async function askQuestion() {
 }
 
 
+/* =========================================================
+   USER MESSAGE
+========================================================= */
+
 function addUserMessage(text) {
+
+    if (!chatMessages) {
+
+        return;
+
+    }
+
 
     const wrapper =
         document.createElement(
@@ -925,7 +1213,9 @@ function addUserMessage(text) {
 
         <div class="user-bubble">
 
-            ${escapeHTML(text)}
+            ${escapeHTML(
+                text
+            )}
 
         </div>
 
@@ -942,10 +1232,21 @@ function addUserMessage(text) {
 }
 
 
+/* =========================================================
+   ASSISTANT MESSAGE
+========================================================= */
+
 function addAssistantMessage(
     answer,
     sources
 ) {
+
+    if (!chatMessages) {
+
+        return;
+
+    }
+
 
     const wrapper =
         document.createElement(
@@ -965,48 +1266,63 @@ function addAssistantMessage(
     let sourcesHTML = "";
 
 
-    if (sources.length > 0) {
+    if (
+        sources &&
+        sources.length > 0
+    ) {
 
         const cards =
-            sources.map(
-                function (source) {
+            sources
+                .map(
+                    function (source) {
 
-                    return `
+                        return `
 
-                        <div class="source-card">
+                            <div class="source-card">
 
-                            <div class="source-header">
+                                <div class="source-header">
 
-                                <strong>
+                                    <strong>
+                                        ${escapeHTML(
+                                            source.document
+                                        )}
+                                    </strong>
+
+
+                                    <span>
+
+                                        Page
+                                        ${escapeHTML(
+                                            source.page
+                                        )}
+
+                                        ·
+
+                                        ${escapeHTML(
+                                            source.relevance
+                                        )}%
+                                        relevance
+
+                                    </span>
+
+                                </div>
+
+
+                                <p>
+
                                     ${escapeHTML(
-                                        source.document
+                                        source.snippet
                                     )}
-                                </strong>
 
-
-                                <span>
-                                    Page ${source.page}
-                                    ·
-                                    ${source.relevance}%
-                                    relevance
-                                </span>
+                                </p>
 
                             </div>
 
+                        `;
 
-                            <p>
-                                ${escapeHTML(
-                                    source.snippet
-                                )}
-                            </p>
-
-                        </div>
-
-                    `;
-
-                }
-            )
-            .join("");
+                    }
+                )
+                .join("");
 
 
         sourcesHTML = `
@@ -1015,21 +1331,32 @@ function addAssistantMessage(
 
                 <button
                     class="sources-toggle"
-                    onclick="toggleSources(
-                        '${sourceId}',
-                        this
-                    )"
+                    onclick="
+                        toggleSources(
+                            '${escapeAttribute(
+                                sourceId
+                            )}',
+                            this
+                        )
+                    "
                 >
-                    View ${sources.length}
+
+                    View
+                    ${sources.length}
                     retrieved sources
+
                 </button>
 
 
                 <div
-                    id="${sourceId}"
+                    id="${escapeAttribute(
+                        sourceId
+                    )}"
                     class="sources-list hidden"
                 >
+
                     ${cards}
+
                 </div>
 
             </div>
@@ -1049,7 +1376,11 @@ function addAssistantMessage(
         <div class="answer-content">
 
             <div class="answer-box">
-                ${escapeHTML(answer)}
+
+                ${escapeHTML(
+                    answer
+                )}
+
             </div>
 
 
@@ -1070,6 +1401,10 @@ function addAssistantMessage(
 }
 
 
+/* =========================================================
+   THINKING MESSAGE
+========================================================= */
+
 function addThinkingMessage() {
 
     const id =
@@ -1083,7 +1418,8 @@ function addThinkingMessage() {
         );
 
 
-    wrapper.id = id;
+    wrapper.id =
+        id;
 
 
     wrapper.className =
@@ -1146,6 +1482,10 @@ function removeThinkingMessage(id) {
 }
 
 
+/* =========================================================
+   SOURCE TOGGLE
+========================================================= */
+
 function toggleSources(
     sourceId,
     button
@@ -1155,6 +1495,13 @@ function toggleSources(
         document.getElementById(
             sourceId
         );
+
+
+    if (!sources) {
+
+        return;
+
+    }
 
 
     const isHidden =
@@ -1176,11 +1523,15 @@ function toggleSources(
 }
 
 
+/* =========================================================
+   REMOVE DOCUMENT CONFIRMATION
+========================================================= */
+
 function confirmRemoveDocument(
     documentId
 ) {
 
-    const document =
+    const selectedDocument =
         documents.find(
             function (item) {
 
@@ -1193,7 +1544,7 @@ function confirmRemoveDocument(
         );
 
 
-    if (!document) {
+    if (!selectedDocument) {
 
         return;
 
@@ -1205,7 +1556,7 @@ function confirmRemoveDocument(
         "Remove document",
 
         "Remove \"" +
-        document.name +
+        selectedDocument.name +
         "\" from the knowledge base? Its vector embeddings will also be deleted.",
 
         async function () {
@@ -1221,6 +1572,10 @@ function confirmRemoveDocument(
 }
 
 
+/* =========================================================
+   REMOVE DOCUMENT
+========================================================= */
+
 async function removeDocument(
     documentId
 ) {
@@ -1230,8 +1585,9 @@ async function removeDocument(
         const response =
             await fetch(
                 "/api/documents/" +
-                documentId,
-
+                encodeURIComponent(
+                    documentId
+                ),
                 {
                     method:
                         "DELETE"
@@ -1267,25 +1623,25 @@ async function removeDocument(
 
 
         /*
-         * If the deleted document was
-         * currently selected, clear it.
+         * Remove it from the selection.
          */
-        if (
-            selectedDocumentId ===
-            documentId
-        ) {
+        selectedDocumentIds =
+            selectedDocumentIds.filter(
+                function (id) {
 
-            selectedDocumentId =
-                null;
+                    return (
+                        id !==
+                        documentId
+                    );
+
+                }
+            );
 
 
-            conversationHistory =
-                [];
+        conversationHistory = [];
 
 
-            resetChat();
-
-        }
+        resetChat();
 
 
         renderDocuments();
@@ -1295,7 +1651,8 @@ async function removeDocument(
 
 
         showToast(
-            data.message,
+            data.message ||
+            "Document removed.",
             "success"
         );
 
@@ -1312,9 +1669,15 @@ async function removeDocument(
 }
 
 
+/* =========================================================
+   CLEAR ALL DOCUMENTS
+========================================================= */
+
 function clearDocuments() {
 
-    if (documents.length === 0) {
+    if (
+        documents.length === 0
+    ) {
 
         showToast(
             "The document library is already empty.",
@@ -1363,12 +1726,10 @@ function clearDocuments() {
                 documents = [];
 
 
-                selectedDocumentId =
-                    null;
+                selectedDocumentIds = [];
 
 
-                conversationHistory =
-                    [];
+                conversationHistory = [];
 
 
                 renderDocuments();
@@ -1381,7 +1742,8 @@ function clearDocuments() {
 
 
                 showToast(
-                    data.message,
+                    data.message ||
+                    "Knowledge base cleared.",
                     "success"
                 );
 
@@ -1402,6 +1764,10 @@ function clearDocuments() {
 }
 
 
+/* =========================================================
+   CLEAR CHAT
+========================================================= */
+
 function clearChat() {
 
     conversationHistory = [];
@@ -1418,7 +1784,18 @@ function clearChat() {
 }
 
 
+/* =========================================================
+   RESET CHAT
+========================================================= */
+
 function resetChat() {
+
+    if (!chatMessages) {
+
+        return;
+
+    }
+
 
     chatMessages.innerHTML = `
 
@@ -1438,9 +1815,11 @@ function resetChat() {
 
 
             <p>
+
                 RAGSphere uses semantic search and
                 retrieval-augmented generation to answer
                 questions using only your uploaded documents.
+
             </p>
 
 
@@ -1461,8 +1840,10 @@ function resetChat() {
 
 
                         <p>
+
                             Finds relevant information by meaning,
                             not just keywords.
+
                         </p>
 
                     </div>
@@ -1485,8 +1866,10 @@ function resetChat() {
 
 
                         <p>
+
                             Responses are generated from retrieved
                             document context.
+
                         </p>
 
                     </div>
@@ -1509,8 +1892,10 @@ function resetChat() {
 
 
                         <p>
+
                             Inspect document names, pages and
                             retrieved passages.
+
                         </p>
 
                     </div>
@@ -1525,6 +1910,10 @@ function resetChat() {
 
 }
 
+
+/* =========================================================
+   REMOVE WELCOME SCREEN
+========================================================= */
 
 function removeWelcome() {
 
@@ -1543,6 +1932,10 @@ function removeWelcome() {
 }
 
 
+/* =========================================================
+   ENTER KEY
+========================================================= */
+
 function handleQuestionKey(event) {
 
     if (
@@ -1560,7 +1953,18 @@ function handleQuestionKey(event) {
 }
 
 
+/* =========================================================
+   TEXTAREA RESIZE
+========================================================= */
+
 function resizeTextarea(element) {
+
+    if (!element) {
+
+        return;
+
+    }
+
 
     element.style.height =
         "auto";
@@ -1570,12 +1974,24 @@ function resizeTextarea(element) {
         Math.min(
             element.scrollHeight,
             120
-        ) + "px";
+        ) +
+        "px";
 
 }
 
 
+/* =========================================================
+   SCROLL CHAT
+========================================================= */
+
 function scrollChat() {
+
+    if (!chatMessages) {
+
+        return;
+
+    }
+
 
     setTimeout(
 
@@ -1593,64 +2009,144 @@ function scrollChat() {
 }
 
 
+/* =========================================================
+   MODAL
+========================================================= */
+
 function openModal(
     title,
     text,
     action
 ) {
 
-    document.getElementById(
-        "modalTitle"
-    ).textContent =
-        title;
+    const titleElement =
+        document.getElementById(
+            "modalTitle"
+        );
 
 
-    document.getElementById(
-        "modalText"
-    ).textContent =
-        text;
+    const textElement =
+        document.getElementById(
+            "modalText"
+        );
+
+
+    const modal =
+        document.getElementById(
+            "confirmModal"
+        );
+
+
+    const confirmButton =
+        document.getElementById(
+            "modalConfirm"
+        );
+
+
+    if (!modal) {
+
+        /*
+         * Fallback if the modal is not present.
+         */
+        if (
+            typeof action === "function"
+        ) {
+
+            action();
+
+        }
+
+        return;
+
+    }
+
+
+    if (titleElement) {
+
+        titleElement.textContent =
+            title;
+
+    }
+
+
+    if (textElement) {
+
+        textElement.textContent =
+            text;
+
+    }
 
 
     pendingConfirmAction =
         action;
 
 
-    document.getElementById(
-        "confirmModal"
-    ).classList.remove(
+    modal.classList.remove(
         "hidden"
     );
 
 
-    document.getElementById(
-        "modalConfirm"
-    ).onclick =
-        async function () {
+    if (confirmButton) {
 
-            closeModal();
+        confirmButton.onclick =
+            async function () {
+
+                closeModal();
 
 
-            if (pendingConfirmAction) {
+                if (
+                    pendingConfirmAction
+                ) {
 
-                await pendingConfirmAction();
+                    const actionToRun =
+                        pendingConfirmAction;
 
-            }
 
-        };
+                    pendingConfirmAction =
+                        null;
+
+
+                    await actionToRun();
+
+                }
+
+            };
+
+    }
 
 }
 
+
+/* =========================================================
+   CLOSE MODAL
+========================================================= */
 
 function closeModal() {
 
-    document.getElementById(
-        "confirmModal"
-    ).classList.add(
-        "hidden"
-    );
+    const modal =
+        document.getElementById(
+            "confirmModal"
+        );
+
+
+    if (modal) {
+
+        modal.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    pendingConfirmAction =
+        null;
 
 }
 
+
+/* =========================================================
+   TOAST
+========================================================= */
 
 function showToast(
     message,
@@ -1661,6 +2157,17 @@ function showToast(
         document.getElementById(
             "toast"
         );
+
+
+    if (!toast) {
+
+        console.log(
+            message
+        );
+
+        return;
+
+    }
 
 
     toast.textContent =
@@ -1688,6 +2195,10 @@ function showToast(
 }
 
 
+/* =========================================================
+   HTML ESCAPING
+========================================================= */
+
 function escapeHTML(value) {
 
     const div =
@@ -1697,9 +2208,44 @@ function escapeHTML(value) {
 
 
     div.textContent =
-        String(value);
+        String(
+            value ?? ""
+        );
 
 
     return div.innerHTML;
+
+}
+
+
+/* =========================================================
+   ATTRIBUTE ESCAPING
+========================================================= */
+
+function escapeAttribute(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /'/g,
+            "&#39;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        );
 
 }
