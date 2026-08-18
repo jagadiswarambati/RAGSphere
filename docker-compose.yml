@@ -1,5 +1,7 @@
 services:
+
   ragsphere:
+
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -12,3 +14,6 @@ services:
 
     environment:
       OLLAMA_URL: "http://host.docker.internal:11434"
+
+    volumes:
+      - ./data:/app/data

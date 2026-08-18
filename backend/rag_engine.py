@@ -16,10 +16,25 @@ GENERATION_MODEL = "llama3.2:3b"
 EMBEDDING_MODEL = "nomic-embed-text"
 
 
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+DATA_DIR = os.path.join(
+    BASE_DIR,
+    "data"
+)
+
 VECTOR_DB_PATH = os.path.join(
-    os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
-    "RAGSphere",
+    DATA_DIR,
     "vector_db"
+)
+
+os.makedirs(
+    VECTOR_DB_PATH,
+    exist_ok=True
 )
 
 
@@ -379,29 +394,40 @@ def retrieve_context(
     selected_document_ids=None,
     top_k=5
 ):
+
+    print("\n" + "=" * 60)
+    print("RAG RETRIEVAL DEBUG")
+    print("=" * 60)
+
+    print("QUESTION:", question)
+    print("SELECTED DOCUMENT IDS:", selected_document_ids)
+
     count = collection.count()
 
+    print("TOTAL VECTOR COUNT:", count)
+
     if count == 0:
+        print("VECTOR DATABASE IS EMPTY")
+        print("=" * 60)
         return []
 
-    # A document must be selected
     if not selected_document_ids:
+        print("NO DOCUMENT SELECTED")
+        print("=" * 60)
         return []
 
-    # Make sure a single ID also works
+    # Make sure a single ID becomes a list
     if isinstance(selected_document_ids, str):
-        selected_document_ids = [selected_document_ids]
+        selected_document_ids = [
+            selected_document_ids
+        ]
 
+    # Create embedding for the question
     question_embedding = get_embedding(
         question
     )
 
-    number_of_results = min(
-        top_k,
-        count
-    )
-
-    # Search ONLY inside selected documents
+    # Search ONLY selected documents
     if len(selected_document_ids) == 1:
 
         where_filter = {
@@ -416,11 +442,17 @@ def retrieve_context(
             }
         }
 
+    print(
+        "CHROMA FILTER:",
+        where_filter
+    )
+
+    # Retrieve candidates
     results = collection.query(
         query_embeddings=[
             question_embedding
         ],
-        n_results=number_of_results,
+        n_results=top_k,
         where=where_filter,
         include=[
             "documents",
@@ -444,16 +476,12 @@ def retrieve_context(
         [[]]
     )[0]
 
-    print("\n========== RAG RETRIEVAL ==========")
-    print("QUESTION:", question)
-    print("SELECTED DOCUMENT IDS:", selected_document_ids)
-    print("COLLECTION COUNT:", count)
-    print("RESULTS FOUND:", len(documents))
+    print(
+        "CHROMA RESULTS:",
+        len(documents)
+    )
 
     retrieved = []
-
-    # Similarity threshold
-    MAX_DISTANCE = 0.60
 
     for index in range(
         len(documents)
@@ -461,18 +489,15 @@ def retrieve_context(
 
         distance = distances[index]
 
-        print(
-            f"\nRESULT {index + 1}"
-            f"\nSource: {metadatas[index].get('source')}"
-            f"\nDocument ID: {metadatas[index].get('document_id')}"
-            f"\nDistance: {distance}"
-            f"\nText: {documents[index][:150]}"
-        )
+        metadata = metadatas[index]
 
-        # Reject weak matches
-        if distance > MAX_DISTANCE:
-            continue
+        text = documents[index]
 
+        # Convert cosine distance into an approximate
+        # similarity percentage.
+        #
+        # Do NOT reject results here.
+        # First let Chroma return the best matches.
         relevance = max(
             0,
             min(
@@ -484,23 +509,88 @@ def retrieve_context(
             )
         )
 
+        print(
+            f"\nRESULT {index + 1}"
+        )
+
+        print(
+            "SOURCE:",
+            metadata.get("source")
+        )
+
+        print(
+            "DOCUMENT ID:",
+            metadata.get("document_id")
+        )
+
+        print(
+            "PAGE:",
+            metadata.get("page")
+        )
+
+        print(
+            "CHUNK:",
+            metadata.get("chunk")
+        )
+
+        print(
+            "DISTANCE:",
+            distance
+        )
+
+        print(
+            "RELEVANCE:",
+            relevance
+        )
+
+        print(
+            "TEXT:",
+            text[:200].replace(
+                "\n",
+                " "
+            )
+        )
+
         retrieved.append({
-            "text": documents[index],
-            "source": metadatas[index]["source"],
-            "page": metadatas[index]["page"],
-            "chunk": metadatas[index]["chunk"],
-            "document_id": metadatas[index]["document_id"],
-            "relevance": relevance
+
+            "text": text,
+
+            "source":
+                metadata.get(
+                    "source",
+                    "Unknown"
+                ),
+
+            "page":
+                metadata.get(
+                    "page",
+                    1
+                ),
+
+            "chunk":
+                metadata.get(
+                    "chunk",
+                    0
+                ),
+
+            "document_id":
+                metadata.get(
+                    "document_id"
+                ),
+
+            "distance":
+                distance,
+
+            "relevance":
+                relevance
         })
 
     print(
-        "\nRELEVANT RESULTS:",
+        "\nFINAL RETRIEVED CHUNKS:",
         len(retrieved)
     )
 
-    print(
-        "===================================\n"
-    )
+    print("=" * 60)
 
     return retrieved
 
