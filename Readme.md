@@ -1,6 +1,6 @@
 # 📄 RAGSphere
 
-RAGSphere is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDF or TXT documents and ask questions about their content using a local Large Language Model (LLM). The project combines document retrieval with AI-generated responses to provide accurate answers based on the uploaded documents.
+RAGSphere is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDF and TXT documents and ask questions about their content using a local Large Language Model (LLM) through Ollama. It supports single-document and multi-document querying: users select one or more documents, and retrieval remains restricted to those selected documents. The project combines semantic document retrieval with AI-generated responses to provide grounded answers and retrieved source evidence where supported by the application.
 
 ---
 
@@ -20,8 +20,8 @@ Before running the project, make sure the following are installed on your system
 
 This project uses two models:
 
-- llama3.2:3b → Generates answers based on the prompt given
-- nomic-embed-text → Creates embeddings for document retrieval
+- `llama3.2:3b` → Generation model
+- `nomic-embed-text` → Embedding model
 
 ---
 
@@ -134,13 +134,13 @@ Select multiple documents:
 - ✓ document-D.pdf
 
 RAGSphere retrieves relevant information only from the selected documents and uses that context to generate the answer. This prevents the system from blindly searching across every document in the knowledge base.
+Users can query multiple selected documents together while retrieval remains restricted to the selected documents.
 
 ---
 
 # 🔎 Semantic Document Retrieval
 
-RAGSphere converts document chunks into vector embeddings using the nomic-embed-text model.  
-When a user asks a question, the question is also converted into an embedding. The system then performs vector similarity search against the stored document embeddings in ChromaDB.
+RAGSphere extracts document text, splits it into chunks, and converts the chunks into vector embeddings using the `nomic-embed-text` model. These embeddings are stored in ChromaDB. When a user asks a question, the question is also converted into an embedding, which is compared against the stored document vectors for semantic/vector retrieval.
 
 Document
    ↓
@@ -160,7 +160,7 @@ Semantic Vector Search
    ↓
 Relevant Chunks
 
-The retrieved chunks are provided to the LLM as context for generating the final answer.
+Relevant chunks from the selected documents are provided to the LLM as context for generating the final answer.
 
 ---
 
@@ -194,7 +194,7 @@ Grounded Answer + Source Evidence
 
 # 📌 Source Evidence
 
-RAGSphere provides source information along with the generated answer. Source information includes:
+Where supported by the current application, RAGSphere provides source information along with the generated answer. Source information includes:
 
 - Document
 - Page
@@ -215,14 +215,31 @@ data/
 ├── documents.json
 └── vector_db/
 
-The vector_db directory contains the ChromaDB vector data used for document retrieval.  
-When running with Docker Compose, the project's data/ directory is mounted into the container so uploaded documents and vector data persist when the container is stopped or recreated.
+- `uploads/` contains uploaded PDF and TXT documents.
+- `documents.json` stores document information.
+- `vector_db/` contains persistent ChromaDB vector data used for document retrieval.
+
+Data persistence allows documents and vector data to remain available when the Docker container is stopped or recreated. When running with Docker Compose, the project's `data/` directory is mounted into the container.
 
 ---
 
 # 🐳 Docker Setup
 
 RAGSphere supports Docker and Docker Compose for containerized execution.
+
+Docker Compose configuration:
+
+```yaml
+services:
+   ragsphere:
+      build: .
+      ports:
+         - "5000:5000"
+      extra_hosts:
+         - "host.docker.internal:host-gateway"
+      environment:
+         OLLAMA_URL: "http://host.docker.internal:11434"
+```
 
 ## Step 1: Verify Docker Installation
 
@@ -309,8 +326,7 @@ RAGSphere/
 ├── frontend/
 │   ├── index.html
 │   ├── script.js
-│   ├── style.css
-│   └── logo.png
+│   └── style.css
 │
 ├── data/
 │   ├── uploads/
@@ -321,10 +337,7 @@ RAGSphere/
 │   └── Dockerfile
 │
 ├── docker-compose.yml
-├── requirements.txt
-├── .dockerignore
-├── .gitignore
-└── README.md
+└── requirements.txt
 
 ---
 
@@ -367,7 +380,7 @@ Both execution methods use the same RAGSphere application and RAG workflow.
 
 # ⚠️ Current Deployment Model
 
-RAGSphere currently uses Ollama for local LLM and embedding inference.  
+RAGSphere currently uses Ollama for local LLM generation and embedding inference.  
 The current Docker configuration is designed for local execution where Ollama is available on the host machine.  
 For public deployment, an inference environment capable of running or accessing the required LLM and embedding models is required.
 
