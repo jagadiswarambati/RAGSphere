@@ -29,8 +29,10 @@ This project uses two models:
 
 ## Step 1: Clone the Repository
 
+```bash
 git clone https://github.com/jagadiswarambati/RAGSphere
 cd RAGSphere
+```
 
 ---
 
@@ -38,11 +40,15 @@ cd RAGSphere
 
 ### Windows
 
+```bash
 python -m venv venv
+```
 
 ### Activate the Virtual Environment
 
+```bash
 venv\Scripts\activate
+```
 
 If activated successfully, your terminal should look like:
 
@@ -52,13 +58,17 @@ If activated successfully, your terminal should look like:
 
 ## Step 3: Install Project Dependencies
 
+```bash
 pip install -r requirements.txt
+```
 
 ---
 
 ## Step 4: Verify Python Installation
 
+```bash
 python --version
+```
 
 Example:
 Python 3.13.x
@@ -67,7 +77,9 @@ Python 3.13.x
 
 ## Step 5: Verify Ollama Installation
 
+```bash
 ollama --version
+```
 
 Example:
 ollama version 0.xx.x
@@ -76,19 +88,25 @@ ollama version 0.xx.x
 
 ## Step 6: Download the LLM
 
+```bash
 ollama pull llama3.2:3b
+```
 
 ---
 
 ## Step 7: Download the Embedding Model
 
+```bash
 ollama pull nomic-embed-text
+```
 
 ---
 
 ## Step 8: Verify Installed Models
 
+```bash
 ollama list
+```
 
 Expected Output:
 NAME
@@ -99,7 +117,9 @@ nomic-embed-text
 
 ## Step 9: Start the Flask Application
 
+```bash
 python backend\app.py
+```
 
 If everything is configured correctly, you should see:
 Running on http://127.0.0.1:5000
@@ -243,20 +263,26 @@ services:
 
 ## Step 1: Verify Docker Installation
 
+```bash
 docker --version
+```
 
 Example output: Docker version 29.x.x
 
 Verify Docker Compose:
 
+```bash
 docker compose version
+```
 
 ## Step 2: Make Sure Ollama Is Running
 
 Ollama must be running on the host machine with the required models installed.  
 Verify the installed models:
 
+```bash
 ollama list
+```
 
 The following models should be available:
 - llama3.2:3b
@@ -266,7 +292,9 @@ The following models should be available:
 
 From the project root:
 
+```bash
 docker compose up --build
+```
 
 This builds the RAGSphere Docker image and starts the application container.  
 Open the application at http://127.0.0.1:5000.
@@ -275,13 +303,17 @@ Open the application at http://127.0.0.1:5000.
 
 If no source code or Docker configuration has changed:
 
+```bash
 docker compose up
+```
 
 ## Step 5: Stop the Docker Application
 
 Press Ctrl + C or run:
 
+```bash
 docker compose down
+```
 
 ---
 
@@ -343,16 +375,46 @@ RAGSphere/
 
 # 🔧 Useful Ollama Commands
 
-- Check Ollama Version: ollama --version
-- List Installed Models: ollama list
-- Download Llama Model: ollama pull llama3.2:3b
-- Download Embedding Model: ollama pull nomic-embed-text
-- Run Llama Model: ollama run llama3.2:3b
-- Run Embedding Model (Testing): ollama run nomic-embed-text
-- Show Running Models: ollama ps
-- Stop a Running Model: ollama stop llama3.2:3b
-- Remove Llama Model: ollama rm llama3.2:3b
-- Remove Embedding Model: ollama rm nomic-embed-text
+- Check Ollama Version:
+   ```bash
+   ollama --version
+   ```
+- List Installed Models:
+   ```bash
+   ollama list
+   ```
+- Download Llama Model:
+   ```bash
+   ollama pull llama3.2:3b
+   ```
+- Download Embedding Model:
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+- Run Llama Model:
+   ```bash
+   ollama run llama3.2:3b
+   ```
+- Run Embedding Model (Testing):
+   ```bash
+   ollama run nomic-embed-text
+   ```
+- Show Running Models:
+   ```bash
+   ollama ps
+   ```
+- Stop a Running Model:
+   ```bash
+   ollama stop llama3.2:3b
+   ```
+- Remove Llama Model:
+   ```bash
+   ollama rm llama3.2:3b
+   ```
+- Remove Embedding Model:
+   ```bash
+   ollama rm nomic-embed-text
+   ```
 
 ---
 
@@ -365,14 +427,18 @@ RAGSphere can be run directly using Python or through Docker.
 Python → Flask → RAG Engine → ChromaDB → Ollama
 
 Run:
+```bash
 python backend/app.py
+```
 
 ### Docker Execution
 
 Docker Container → Flask → RAG Engine → ChromaDB → Host Ollama
 
 Run:
+```bash
 docker compose up --build
+```
 
 Both execution methods use the same RAGSphere application and RAG workflow.
 
