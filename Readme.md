@@ -2,8 +2,6 @@
 
 RAGSphere is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDF or TXT documents and ask questions about their content using a local Large Language Model (LLM). The project combines document retrieval with AI-generated responses to provide accurate answers based on the uploaded documents.
 
-RAGSphere supports both **single-document and multi-document querying**, allowing users to select one or multiple documents before asking questions.
-
 ---
 
 # 🛠️ Requirements
@@ -13,8 +11,7 @@ Before running the project, make sure the following are installed on your system
 - Python 3.10 or above
 - Git
 - Ollama
-- Docker Desktop
-- Internet connection (only for downloading models and dependencies the first time)
+- Internet connection (only for downloading models the first time)
 
 ---
 
@@ -34,3 +31,122 @@ This project uses two models:
 ```bash
 git clone https://github.com/jagadiswarambati/RAGSphere
 cd RAGSphere
+```
+
+---
+
+## Step 2: Create a Virtual Environment
+
+### Windows
+
+```bash
+python -m venv venv
+```
+
+### Activate the Virtual Environment
+
+```bash
+venv\Scripts\activate
+```
+
+If activated successfully, your terminal should look like:
+
+```text
+(venv) C:\Users\YourName\RAGSphere>
+```
+
+---
+
+## Step 3: Install Project Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Step 4: Verify Python Installation
+
+```bash
+python --version
+```
+
+Example:
+
+```text
+Python 3.13.x
+```
+
+---
+
+## Step 5: Verify Ollama Installation
+
+```bash
+ollama --version
+```
+
+Example:
+
+```text
+ollama version 0.xx.x
+```
+
+---
+
+## Step 6: Download the LLM
+
+```bash
+ollama pull llama3.2:3b
+```
+
+---
+
+## Step 7: Download the Embedding Model
+
+```bash
+ollama pull nomic-embed-text
+```
+
+---
+
+## Step 8: Verify Installed Models
+
+```bash
+ollama list
+```
+
+Expected Output:
+
+```text
+NAME
+
+llama3.2:3b
+
+nomic-embed-text
+```
+
+---
+
+## Step 9: Start the Flask Application
+
+```bash
+python backend\app.py
+```
+
+If everything is configured correctly, you should see:
+
+```text
+Running on http://127.0.0.1:5000
+```
+
+---
+
+## Step 10: Open the Application
+
+Open your browser and visit:
+
+```
+http://127.0.0.1:5000
+```
+
+You can now upl
