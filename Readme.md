@@ -11,6 +11,7 @@ Before running the project, make sure the following are installed on your system
 - Python 3.10 or above
 - Git
 - Ollama
+- Docker Desktop
 - Internet connection (only for downloading models the first time)
 
 ---
@@ -19,8 +20,8 @@ Before running the project, make sure the following are installed on your system
 
 This project uses two models:
 
-- **llama3.2:3b** → Generates answers
-- **nomic-embed-text** → Creates embeddings for document retrieval
+- llama3.2:3b → Generates answers based on the prompt given
+- nomic-embed-text → Creates embeddings for document retrieval
 
 ---
 
@@ -28,10 +29,8 @@ This project uses two models:
 
 ## Step 1: Clone the Repository
 
-```bash
 git clone https://github.com/jagadiswarambati/RAGSphere
 cd RAGSphere
-```
 
 ---
 
@@ -39,114 +38,373 @@ cd RAGSphere
 
 ### Windows
 
-```bash
 python -m venv venv
-```
 
 ### Activate the Virtual Environment
 
-```bash
 venv\Scripts\activate
-```
 
 If activated successfully, your terminal should look like:
 
-```text
 (venv) C:\Users\YourName\RAGSphere>
-```
 
 ---
 
 ## Step 3: Install Project Dependencies
 
-```bash
 pip install -r requirements.txt
-```
 
 ---
 
 ## Step 4: Verify Python Installation
 
-```bash
 python --version
-```
 
 Example:
-
-```text
 Python 3.13.x
-```
 
 ---
 
 ## Step 5: Verify Ollama Installation
 
-```bash
 ollama --version
-```
 
 Example:
-
-```text
 ollama version 0.xx.x
-```
 
 ---
 
 ## Step 6: Download the LLM
 
-```bash
 ollama pull llama3.2:3b
-```
 
 ---
 
 ## Step 7: Download the Embedding Model
 
-```bash
 ollama pull nomic-embed-text
-```
 
 ---
 
 ## Step 8: Verify Installed Models
 
-```bash
 ollama list
-```
 
 Expected Output:
-
-```text
 NAME
-
 llama3.2:3b
-
 nomic-embed-text
-```
 
 ---
 
 ## Step 9: Start the Flask Application
 
-```bash
 python backend\app.py
-```
 
 If everything is configured correctly, you should see:
-
-```text
 Running on http://127.0.0.1:5000
-```
 
 ---
 
 ## Step 10: Open the Application
 
 Open your browser and visit:
-
-```
 http://127.0.0.1:5000
-```
 
-You can now upl
+
+
+
+---
+
+# 📚 Document Selection and Querying
+
+RAGSphere supports both single-document and multi-document querying.
+
+### Single Document
+Select one document from the document library:
+- ✓ document-A.pdf
+
+The question is answered using relevant information retrieved from the selected document.
+
+### Multiple Documents
+Select multiple documents:
+- ✓ document-A.pdf
+- ✓ document-B.pdf
+- ✓ document-C.pdf
+- ✓ document-D.pdf
+
+RAGSphere retrieves relevant information only from the selected documents and uses that context to generate the answer. This prevents the system from blindly searching across every document in the knowledge base.
+
+---
+
+# 🔎 Semantic Document Retrieval
+
+RAGSphere converts document chunks into vector embeddings using the nomic-embed-text model.  
+When a user asks a question, the question is also converted into an embedding. The system then performs vector similarity search against the stored document embeddings in ChromaDB.
+
+Document
+   ↓
+Text Extraction
+   ↓
+Chunking
+   ↓
+Embedding
+   ↓
+ChromaDB
+
+Question
+   ↓
+Embedding
+   ↓
+Semantic Vector Search
+   ↓
+Relevant Chunks
+
+The retrieved chunks are provided to the LLM as context for generating the final answer.
+
+---
+
+# 🔄 RAG Pipeline
+
+RAGSphere follows the following Retrieval-Augmented Generation workflow:
+
+Document Upload
+      ↓
+PDF / TXT Text Extraction
+      ↓
+Text Chunking
+      ↓
+Embedding Generation
+      ↓
+ChromaDB Vector Storage
+      ↓
+Question Embedding
+      ↓
+Semantic Vector Retrieval
+      ↓
+Selected Document Filtering
+      ↓
+Relevant Context
+      ↓
+LLM Generation
+      ↓
+Grounded Answer + Source Evidence
+
+---
+
+# 📌 Source Evidence
+
+RAGSphere provides source information along with the generated answer. Source information includes:
+
+- Document
+- Page
+- Chunk
+- Relevance
+- Snippet
+
+This allows users to identify the retrieved information used to generate the response.
+
+---
+
+# 💾 Persistent Data
+
+RAGSphere stores application data inside the project's data/ directory:
+
+data/
+├── uploads/
+├── documents.json
+└── vector_db/
+
+The vector_db directory contains the ChromaDB vector data used for document retrieval.  
+When running with Docker Compose, the project's data/ directory is mounted into the container so uploaded documents and vector data persist when the container is stopped or recreated.
+
+---
+
+# 🐳 Docker Setup
+
+RAGSphere supports Docker and Docker Compose for containerized execution.
+
+## Step 1: Verify Docker Installation
+
+docker --version
+
+Example output: Docker version 29.x.x
+
+Verify Docker Compose:
+
+docker compose version
+
+## Step 2: Make Sure Ollama Is Running
+
+Ollama must be running on the host machine with the required models installed.  
+Verify the installed models:
+
+ollama list
+
+The following models should be available:
+- llama3.2:3b
+- nomic-embed-text
+
+## Step 3: Build and Start RAGSphere
+
+From the project root:
+
+docker compose up --build
+
+This builds the RAGSphere Docker image and starts the application container.  
+Open the application at http://127.0.0.1:5000.
+
+## Step 4: Start Without Rebuilding
+
+If no source code or Docker configuration has changed:
+
+docker compose up
+
+## Step 5: Stop the Docker Application
+
+Press Ctrl + C or run:
+
+docker compose down
+
+---
+
+# 🔗 Docker → Ollama Connection
+
+When RAGSphere runs inside Docker, the Flask application and RAG pipeline run inside the Docker container while Ollama runs on the host machine.
+
+Browser
+   ↓
+Port 5000
+   ↓
+RAGSphere Docker Container
+   ↓
+Flask Backend
+   ↓
+RAG Engine
+   ↓
+ChromaDB
+   ↓
+host.docker.internal:11434
+   ↓
+Ollama
+   ├── llama3.2:3b
+   └── nomic-embed-text
+
+The Docker Compose configuration uses:
+
+OLLAMA_URL: "http://host.docker.internal:11434"
+
+to allow the container to communicate with Ollama running on the host machine.
+
+---
+
+# 📁 Project Structure
+
+RAGSphere/
+│
+├── backend/
+│   ├── app.py
+│   └── rag_engine.py
+│
+├── frontend/
+│   ├── index.html
+│   ├── script.js
+│   ├── style.css
+│   └── logo.png
+│
+├── data/
+│   ├── uploads/
+│   ├── documents.json
+│   └── vector_db/
+│
+├── docker/
+│   └── Dockerfile
+│
+├── docker-compose.yml
+├── requirements.txt
+├── .dockerignore
+├── .gitignore
+└── README.md
+
+---
+
+# 🔧 Useful Ollama Commands
+
+- Check Ollama Version: ollama --version
+- List Installed Models: ollama list
+- Download Llama Model: ollama pull llama3.2:3b
+- Download Embedding Model: ollama pull nomic-embed-text
+- Run Llama Model: ollama run llama3.2:3b
+- Run Embedding Model (Testing): ollama run nomic-embed-text
+- Show Running Models: ollama ps
+- Stop a Running Model: ollama stop llama3.2:3b
+- Remove Llama Model: ollama rm llama3.2:3b
+- Remove Embedding Model: ollama rm nomic-embed-text
+
+---
+
+# ⚙️ Local and Docker Execution
+
+RAGSphere can be run directly using Python or through Docker.
+
+### Local Execution
+
+Python → Flask → RAG Engine → ChromaDB → Ollama
+
+Run:
+python backend/app.py
+
+### Docker Execution
+
+Docker Container → Flask → RAG Engine → ChromaDB → Host Ollama
+
+Run:
+docker compose up --build
+
+Both execution methods use the same RAGSphere application and RAG workflow.
+
+---
+
+# ⚠️ Current Deployment Model
+
+RAGSphere currently uses Ollama for local LLM and embedding inference.  
+The current Docker configuration is designed for local execution where Ollama is available on the host machine.  
+For public deployment, an inference environment capable of running or accessing the required LLM and embedding models is required.
+
+---
+
+# 🚧 Future Improvements
+
+- Public/cloud deployment
+- Cloud-based LLM and embedding support
+- Improved retrieval and reranking
+- Advanced RAG evaluation
+- Streaming responses
+- Conversation memory
+- Additional document formats
+- Authentication and multi-user support
+- LangChain exploration
+- LangGraph exploration
+- Advanced agentic workflows
+
+---
+
+# 🎯 Project Goal
+
+RAGSphere was built as a practical implementation of Retrieval-Augmented Generation, with a focus on understanding how the individual components of a RAG system work together.  
+The project covers the workflow from document processing and embeddings to vector retrieval, context construction, and LLM-based response generation.
+
+Documents → Embeddings → Vector Database → Semantic Retrieval → Relevant Context → LLM → Grounded Response
+
+---
+
+# 📌 Project Status
+
+RAGSphere is a functional Dockerized local RAG application supporting single-document and multi-document querying with source-grounded responses.
+
+---
+
+# 👨‍💻 Author
+
+Jagadishwar Ambati  
+GitHub: https://github.com/jagadiswarambati/RAGSphere
