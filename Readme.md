@@ -156,38 +156,12 @@ Select multiple documents:
 RAGSphere retrieves relevant information only from the selected documents and uses that context to generate the answer. This prevents the system from blindly searching across every document in the knowledge base.
 Users can query multiple selected documents together while retrieval remains restricted to the selected documents.
 
----
 
-# 🔎 Semantic Document Retrieval
-
-RAGSphere extracts document text, splits it into chunks, and converts the chunks into vector embeddings using the `nomic-embed-text` model. These embeddings are stored in ChromaDB. When a user asks a question, the question is also converted into an embedding, which is compared against the stored document vectors for semantic/vector retrieval.
-
-Document
-   ↓
-Text Extraction
-   ↓
-Chunking
-   ↓
-Embedding
-   ↓
-ChromaDB
-
-Question
-   ↓
-Embedding
-   ↓
-Semantic Vector Search
-   ↓
-Relevant Chunks
-
-Relevant chunks from the selected documents are provided to the LLM as context for generating the final answer.
-
----
 
 # 🔄 RAG Pipeline
 
 RAGSphere follows the following Retrieval-Augmented Generation workflow:
-
+```bash
 Document Upload
       ↓
 PDF / TXT Text Extraction
@@ -209,7 +183,7 @@ Relevant Context
 LLM Generation
       ↓
 Grounded Answer + Source Evidence
-
+```
 ---
 
 # 📌 Source Evidence
@@ -348,7 +322,7 @@ to allow the container to communicate with Ollama running on the host machine.
 ---
 
 # 📁 Project Structure
-
+```bash
 RAGSphere/
 │
 ├── backend/
@@ -370,7 +344,7 @@ RAGSphere/
 │
 ├── docker-compose.yml
 └── requirements.txt
-
+```
 ---
 
 # 🔧 Useful Ollama Commands
@@ -450,28 +424,8 @@ RAGSphere currently uses Ollama for local LLM generation and embedding inference
 The current Docker configuration is designed for local execution where Ollama is available on the host machine.  
 For public deployment, an inference environment capable of running or accessing the required LLM and embedding models is required.
 
----
-
-# 🚧 Future Improvements
-
-- Public/cloud deployment
-- Cloud-based LLM and embedding support
-- Improved retrieval and reranking
-- Advanced RAG evaluation
-- Streaming responses
-- Conversation memory
-- Additional document formats
-- Authentication and multi-user support
-- LangChain exploration
-- LangGraph exploration
-- Advanced agentic workflows
-
----
 
 # 🎯 Project Goal
-
-RAGSphere was built as a practical implementation of Retrieval-Augmented Generation, with a focus on understanding how the individual components of a RAG system work together.  
-The project covers the workflow from document processing and embeddings to vector retrieval, context construction, and LLM-based response generation.
 
 Documents → Embeddings → Vector Database → Semantic Retrieval → Relevant Context → LLM → Grounded Response
 
@@ -486,4 +440,3 @@ RAGSphere is a functional Dockerized local RAG application supporting single-doc
 # 👨‍💻 Author
 
 Jagadishwar Ambati  
-GitHub: https://github.com/jagadiswarambati/RAGSphere
